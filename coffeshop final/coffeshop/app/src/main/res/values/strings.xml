@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">coffeshop</string>
+    <string name="choice_your_nfavorite_coffe">Choice your\nFavorite Coffe</string>
+    <string name="get_started">Get Started</string>
+    <string name="search">Search . . .</string>
+    <string name="populer_coffe">Populer Coffe</string>
+    <string name="keranjang">Keranjang</string>
+    <string name="explorer">Explorer</string>
+    <string name="profile">Profile</string>
+    <string name="gambar_latar_belakang_splash_screen">Gambar latar belakang splash screen</string>
+    <string name="enter_your_discount_code">Enter Your Discount Code</string>
+    <string name="apply">Apply</string>
+    <string name="cart">Cart</string>
+    <string name="tombol_kembali_desc" />
+</resources>

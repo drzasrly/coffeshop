@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:layout_marginBottom="8dp"
+    android:layout_marginHorizontal="16dp"
+    android:background="@drawable/cream_bg"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/picItem"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:scaleType="centerCrop"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:srcCompat="@tools:sample/backgrounds/scenic"
+        android:contentDescription="Gambar Produk Wishlist" />
+
+    <TextView
+        android:id="@+id/titleTxt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp"
+        android:textColor="@color/darkBrown"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:maxLines="2"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@+id/picItem"
+        app:layout_constraintTop_toTopOf="@+id/picItem"
+        app:layout_constraintEnd_toStartOf="@+id/deleteBtn"
+        tools:text="Nama Kopi Panjang dan Lezat Sekali" />
+
+    <TextView
+        android:id="@+id/priceTxt"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/darkBrown"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toEndOf="@+id/picItem"
+        app:layout_constraintTop_toBottomOf="@+id/titleTxt"
+        app:layout_constraintEnd_toStartOf="@+id/deleteBtn"
+        tools:text="Rp 25.000" />
+
+    <ImageView
+        android:id="@+id/deleteBtn"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:padding="4dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_delete"
+        android:contentDescription="Hapus dari Wishlist"/>
+
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/addToCartBtn"
+        style="@android:style/Widget.Button.Small"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/brown_full_corner_bg"
+        android:text="Tambah ke Keranjang"
+        android:textColor="@color/white"
+        android:textSize="12sp"
+        android:paddingHorizontal="8dp"
+        app:layout_constraintStart_toStartOf="@+id/priceTxt"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/priceTxt" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
