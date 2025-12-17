@@ -1,6 +1,7 @@
 package com.example.coffeshop.Activity
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -8,15 +9,24 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.example.coffeshop.Domain.ItemsModel
+import com.example.coffeshop.Domain.WishlistRequest
+import com.example.coffeshop.Domain.WishlistResponse
 import com.example.coffeshop.Helper.ChangeNumberItemsListener
 import com.example.coffeshop.Helper.ManagmentCart
-import com.example.coffeshop.R // Wajib
+import com.example.coffeshop.Helper.TokenManager
+import com.example.coffeshop.R
+import com.example.coffeshop.Repository.ApiService
+import com.example.coffeshop.Repository.RetrofitClient
 import com.example.coffeshop.databinding.ActivityDetailBinding
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class DetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailBinding
     private lateinit var item: ItemsModel
     private lateinit var managmentCart: ManagmentCart
+    private lateinit var apiInterface: ApiService
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,88 +36,96 @@ class DetailActivity : AppCompatActivity() {
 
         managmentCart = ManagmentCart(this)
 
+        // Inisialisasi API Client
+        apiInterface = RetrofitClient.apiService
+
         bundle()
-        initSizeList()
+        // initSizeList() // Aktifkan jika fungsi ini sudah ada kodenya
     }
 
-    private fun initSizeList() {
-        // ... (Logika ukuran tombol)
-    }
-
-    /**
-     * Memperbarui ikon Wishlist (TERISI/KOSONG) berdasarkan status item.
-     * Mengatasi masalah tint dengan membersihkan ColorFilter.
-     */
     private fun updateFavoriteButton() {
         val isFav = managmentCart.isItemInWishlist(item)
         if (isFav) {
-            // Status: TERISI
-            // Menggunakan ikon solid yang sudah Anda buat.
             binding.wishlistBtn.setImageResource(R.drawable.ic_favorite_filled)
-
-            // PENTING: Hapus filter warna agar warna solid terlihat
             binding.wishlistBtn.clearColorFilter()
         } else {
-            // Status: KOSONG
-            // Menggunakan ikon garis luar (btn_3).
             binding.wishlistBtn.setImageResource(R.drawable.btn_3)
-
-            // Terapkan filter warna agar garis luarnya berwarna cokelat.
-            // ASUMSI: R.color.darkBrown ada
             binding.wishlistBtn.setColorFilter(
                 ContextCompat.getColor(this, R.color.darkBrown)
             )
         }
     }
 
-
     private fun bundle() {
         binding.apply {
-            backBtn.setOnClickListener {
-                finish()
-            }
+            backBtn.setOnClickListener { finish() }
             wishlistBtn.visibility = View.VISIBLE
 
             @Suppress("DEPRECATION")
             item = intent.getSerializableExtra("object") as ItemsModel
 
-            if (item.numberInCart == 0) {
-                item.numberInCart = 1
-            }
+            if (item.numberInCart == 0) { item.numberInCart = 1 }
             numberInCartTxt.text = item.numberInCart.toString()
 
-            // 1. Inisialisasi tampilan favorit awal
-            updateFavoriteButton() // Panggil di sini agar status awal dimuat
+            updateFavoriteButton()
 
-            // 2. Load gambar (Glide)
             Glide.with(this@DetailActivity)
                 .load(item.picUrl[0])
                 .into(picMain)
 
-            // 3. Set data UI lainnya
             titleTxt.text = item.title
             descTxt.text = item.description
             priceTxt.text = "$" + item.price.toString()
             ratingTxt.text = item.rating.toString()
 
-            // ... (Listener Cart dan lainnya)
-
-            // 4. Logika Wishlist
+            // LOGIKA KLIK WISHLIST
             wishlistBtn.setOnClickListener {
                 val isFav = managmentCart.isItemInWishlist(item)
                 if (isFav) {
-                    // Hapus Item
-                    managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener{
-                        override fun onChanged() {} // Listener dummy
+                    // 1. Hapus Lokal
+                    managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener {
+                        override fun onChanged() {}
                     })
                     Toast.makeText(this@DetailActivity, "Removed from Wishlist", Toast.LENGTH_SHORT).show()
                 } else {
-                    // Tambah Item
+                    // 1. Tambah Lokal (Supaya Ikon Cepat Berubah)
                     managmentCart.addToWishlist(item)
+
+                    // 2. Tambah ke Laravel MySQL
+                    tambahKeWishlistLaravel(item.id.toString())
+
                     Toast.makeText(this@DetailActivity, "Added to Wishlist", Toast.LENGTH_SHORT).show()
                 }
-                updateFavoriteButton() // PENTING: Perbarui tampilan tombol setelah aksi
+                updateFavoriteButton()
             }
         }
+    }
+
+    private fun tambahKeWishlistLaravel(menuId: String) {
+        // Ambil token dari TokenManager
+        val token = TokenManager.instance.getToken()
+
+        if (token == null) {
+            Log.e("API_DEBUG", "Gagal: User belum login / Token tidak ditemukan")
+            return
+        }
+
+        val tokenHeader = "Bearer $token"
+        val request = WishlistRequest(menuId)
+
+        apiInterface.addWishlist(tokenHeader, request).enqueue(object : Callback<WishlistResponse> {
+            override fun onResponse(call: Call<WishlistResponse>, response: Response<WishlistResponse>) {
+                if (response.isSuccessful) {
+                    Log.d("API_DEBUG", "Berhasil simpan ke MySQL!")
+                } else {
+                    // Jika error 401 atau 500 akan tercetak di sini
+                    Log.e("API_DEBUG", "Gagal! Kode: ${response.code()} Error: ${response.errorBody()?.string()}")
+                }
+            }
+
+            override fun onFailure(call: Call<WishlistResponse>, t: Throwable) {
+                Log.e("API_DEBUG", "Koneksi ke Server Gagal: ${t.message}")
+            }
+        })
     }
 }

@@ -25,18 +25,19 @@ class WishlistViewModel : ViewModel() {
         }
     }
 
-    fun addToWishlist(menuId: String) {
+    // Di dalam Activity atau Adapter saat tombol diklik
+    fun addProductToWishlist(productId: String) {
         viewModelScope.launch {
             try {
-                val request = WishlistRequest(menuId)
-                val response = apiService.addToWishlist(request)
-
+                // Mengirim ID Produk (dari Firebase) ke SQL (Laravel)
+                val response = RetrofitClient.apiService.addToWishlist(WishlistRequest(productId))
                 if (response.success) {
-                    loadWishlist()
+                    // Berhasil tersimpan di SQL
                 }
             } catch (e: Exception) {
-                // Tangani error, misal: item sudah ada (422) atau jaringan
+                // Tangani error
             }
+
         }
     }
 }
