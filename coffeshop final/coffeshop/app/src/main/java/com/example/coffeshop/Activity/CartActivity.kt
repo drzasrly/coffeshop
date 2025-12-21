@@ -1,51 +1,58 @@
 package com.example.coffeshop.Activity
 
 import android.os.Bundle
+import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.coffeshop.Adapter.CartAdapter
 import com.example.coffeshop.Helper.ChangeNumberItemsListener
 import com.example.coffeshop.Helper.ManagmentCart
-import com.example.coffeshop.R
 import com.example.coffeshop.databinding.ActivityCartBinding
+import com.example.coffeshop.viewModel.CartViewModel
+import com.example.coffeshop.Domain.CartModel
 
 class CartActivity : AppCompatActivity() {
-    lateinit var binding: ActivityCartBinding
-    private lateinit var managmentCart: ManagmentCart
-    private var tax: Double = 0.0
+    private lateinit var binding: ActivityCartBinding
+    private lateinit var viewModel: CartViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        binding= ActivityCartBinding.inflate(layoutInflater)
-
-        // PERBAIKAN 1: Menggunakan binding.root
+        binding = ActivityCartBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        managmentCart= ManagmentCart(this)
+        viewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        ).get(CartViewModel::class.java)
 
-        calculateCart()
         setVariable()
         initCartList()
     }
 
     private fun initCartList() {
-        binding.apply {
-            listView.layoutManager=
-                LinearLayoutManager(this@CartActivity, LinearLayoutManager.VERTICAL, false)
+        binding.listView.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
 
-            listView.adapter= CartAdapter(
-                managmentCart.getListCart(),
-                this@CartActivity,
+        // Observe data dari Room
+        viewModel.localCart.observe(this) { items ->
+            // Update Adapter
+            val adapter = CartAdapter(
+                ArrayList(items),
+                this,
+                viewModel,
                 object : ChangeNumberItemsListener {
                     override fun onChanged() {
-                        calculateCart()
+                        // Perhitungan otomatis terpicu oleh LiveData
                     }
                 }
             )
+            binding.listView.adapter = adapter
+
+            // Update Total Biaya
+            calculateCartFromRoom(items)
         }
     }
 
@@ -55,22 +62,25 @@ class CartActivity : AppCompatActivity() {
         }
     }
 
-    private fun calculateCart() {
-        val percentTax= 0.02
-        val delivery=15.0 // Mengubah menjadi Double untuk perhitungan yang konsisten
+    private fun calculateCartFromRoom(items: List<CartModel>) {
+        val percentTax = 0.02
+        val delivery = 15.0
 
-        // Menggunakan 100.0 untuk memastikan perhitungan Double
-        val fee = managmentCart.getTotalFee()
-        tax=((fee * percentTax) * 100)/100.0
-        val total=((fee + tax + delivery) * 100)/100.0
-        val itemtotal=(fee * 100)/100.0
-
-        binding.apply {
-            totalFeeTxt.text= "$$itemtotal"
-            totalTaxTxt.text= "$$tax"
-            deliveryTxt.text= "$$delivery"
-            totalTxt.text= "$$total"
+        var fee = 0.0
+        for (item in items) {
+            val priceValue = item.price.toDoubleOrNull() ?: 0.0
+            fee += (priceValue * item.quantity)
         }
 
+        val tax = Math.round((fee * percentTax) * 100.0) / 100.0
+        val subTotal = Math.round(fee * 100.0) / 100.0
+        val total = Math.round((subTotal + tax + delivery) * 100.0) / 100.0
+
+        binding.apply {
+            totalFeeTxt.text = "$$subTotal"
+            totalTaxTxt.text = "$$tax"
+            deliveryTxt.text = "$$delivery"
+            totalTxt.text = "$$total"
+        }
     }
 }

@@ -10,19 +10,14 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
 import com.example.coffeshop.Domain.ItemsModel
-import com.example.coffeshop.Domain.WishlistRequest
-import com.example.coffeshop.Domain.WishlistResponse
 import com.example.coffeshop.Helper.ChangeNumberItemsListener
 import com.example.coffeshop.Helper.ManagmentCart
-import com.example.coffeshop.Helper.TokenManager
 import com.example.coffeshop.R
 import com.example.coffeshop.Repository.ApiService
 import com.example.coffeshop.Repository.RetrofitClient
 import com.example.coffeshop.databinding.ActivityDetailBinding
 import com.example.coffeshop.viewModel.WishlistViewModel
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import com.example.coffeshop.viewModel.CartViewModel // Pastikan di-import
 
 class DetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailBinding
@@ -30,6 +25,9 @@ class DetailActivity : AppCompatActivity() {
     private lateinit var managmentCart: ManagmentCart
     private lateinit var apiInterface: ApiService
     private lateinit var viewModel: WishlistViewModel
+
+    // 1. TAMBAHKAN deklarasi viewModelCart di sini agar tidak error
+    private lateinit var viewModelCart: CartViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,11 +38,17 @@ class DetailActivity : AppCompatActivity() {
         managmentCart = ManagmentCart(this)
         apiInterface = RetrofitClient.apiService
 
-        // Inisialisasi ViewModel
+        // Inisialisasi Wishlist ViewModel
         viewModel = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(application)
         ).get(WishlistViewModel::class.java)
+
+        // 2. INISIALISASI CartViewModel
+        viewModelCart = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        ).get(CartViewModel::class.java)
 
         bundle()
     }
@@ -89,44 +93,45 @@ class DetailActivity : AppCompatActivity() {
             ratingTxt.text = item.rating.toString()
 
             // LOGIKA KLIK WISHLIST
-            // LOGIKA KLIK WISHLIST
             wishlistBtn.setOnClickListener {
-                // Pengecekan status awal sebelum aksi
                 val isCurrentlyFav = managmentCart.isItemInWishlist(item)
                 val currentMenuId = item.id.toString()
 
                 if (isCurrentlyFav) {
-                    // HAPUS: Panggil ViewModel dulu agar data ID konsisten
                     viewModel.removeFromWishlist(currentMenuId)
-
-                    // Baru hapus dari ManagementCart (SharedPreferences/UI Helper)
                     managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener {
-                        override fun onChanged() {
-                            // Opsional: jalankan kode jika UI butuh update setelah data benar-benar hilang
-                        }
+                        override fun onChanged() {}
                     })
-
                     Toast.makeText(this@DetailActivity, "Removed from Wishlist", Toast.LENGTH_SHORT).show()
                 } else {
-                    // TAMBAH: Tambah ke ManagementCart dulu
                     managmentCart.addToWishlist(item)
-
-                    // Kirim ke Laravel & Room via ViewModel
                     viewModel.addProductToWishlist(
                         menuId = currentMenuId,
                         name = item.title,
                         price = item.price.toString(),
                         imageUrl = item.picUrl[0]
                     )
-
                     Toast.makeText(this@DetailActivity, "Added to Wishlist", Toast.LENGTH_SHORT).show()
                 }
-
-                // Refresh status icon
                 updateFavoriteButton()
-
-                // Tambahkan Log untuk verifikasi di Logcat
                 Log.d("API_DEBUG", "Klik Tombol Wishlist - MenuID: $currentMenuId, Action: ${if (isCurrentlyFav) "DELETE" else "ADD"}")
+            }
+
+            // LOGIKA KLIK ADD TO CART
+            addToCartBtn.setOnClickListener {
+                val qty = numberInCartTxt.text.toString().toInt()
+
+                // Sekarang viewModelCart sudah terdefinisi
+                viewModelCart.addToCart(
+                    menuId = item.id.toString(),
+                    name = item.title,
+                    price = item.price.toString(), // Pastikan parameter di ViewModel adalah String
+                    imageUrl = item.picUrl[0],
+                    qty = qty
+                )
+
+                // 3. Pastikan memanggil .show() pada Toast
+                Toast.makeText(this@DetailActivity, "Ditambahkan ke Keranjang", Toast.LENGTH_SHORT).show()
             }
         }
     }

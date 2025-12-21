@@ -36,4 +36,22 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("menu_id") menuId: String
     ): Call<ResponseBody>
+
+    // Get All Cart
+    @GET("cart")
+    fun getCart(@Header("Authorization") token: String): Call<ResponseBody>
+
+    // Add/Update Cart
+    @POST("cart")
+    fun addCart(
+        @Header("Authorization") token: String,
+        @Body request: CartRequest
+    ): Call<ResponseBody>
+
+    // Delete Cart
+    @DELETE("cart/{menu_id}")
+    fun removeFromCart(
+        @Header("Authorization") token: String,
+        @Path("menu_id") menuId: String
+    ): Call<ResponseBody>
 }
