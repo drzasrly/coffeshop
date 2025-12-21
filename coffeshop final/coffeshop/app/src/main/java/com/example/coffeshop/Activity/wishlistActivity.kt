@@ -6,13 +6,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.coffeshop.Adapter.WishlistAdapter
 import com.example.coffeshop.Adapter.WishlistChangeListener
 import com.example.coffeshop.Domain.ItemsModel
 import com.example.coffeshop.Helper.ManagmentCart
 import com.example.coffeshop.databinding.ActivityWishlistBinding
-
+import com.example.coffeshop.viewModel.WishlistViewModel // Tambahkan Import
 
 class wishlistActivity : AppCompatActivity() {
 
@@ -20,6 +21,7 @@ class wishlistActivity : AppCompatActivity() {
     private lateinit var managmentCart: ManagmentCart
     private lateinit var wishlistAdapter: WishlistAdapter
     private lateinit var itemsList: ArrayList<ItemsModel>
+    private lateinit var viewModel: WishlistViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,6 +31,12 @@ class wishlistActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         managmentCart = ManagmentCart(this)
+
+        // 1. Inisialisasi ViewModel
+        viewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        ).get(WishlistViewModel::class.java)
 
         setupHeader()
 
@@ -60,14 +68,14 @@ class wishlistActivity : AppCompatActivity() {
             binding.emptyWishlistText.visibility = View.GONE
             binding.wishlistRecyclerView.visibility = View.VISIBLE
 
-            wishlistAdapter = WishlistAdapter(itemsList, this)
+            // 2. Kirim 'viewModel' ke dalam Constructor Adapter
+            wishlistAdapter = WishlistAdapter(itemsList, this, viewModel)
 
             binding.wishlistRecyclerView.apply {
                 layoutManager = LinearLayoutManager(this@wishlistActivity)
                 adapter = wishlistAdapter
             }
 
-            // MEMASANG LISTENER AGAR ADAPTER DAPAT BERKOMUNIKASI DENGAN ACTIVITY
             wishlistAdapter.wishlistChangeListener = object : WishlistChangeListener {
                 override fun onWishlistChanged() {
                     updateWishlistUI()

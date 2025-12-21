@@ -1,19 +1,14 @@
 package com.example.coffeshop.Domain
 
-import android.media.Rating
 import java.io.Serializable
 
 data class ItemsModel(
+    var id: Int = 0, // Ubah Any menjadi Int agar cocok dengan Database SQL
     var title: String = "",
-    var description: String= "",
+    var description: String = "",
     var picUrl: ArrayList<String> = ArrayList(),
     var price: Double = 0.0,
     var rating: Double = 0.0,
     var numberInCart: Int = 0,
     var extra: String = ""
-) : Serializable {
-    val id: Any
-        get() {
-            TODO()
-        }
-}
+) : Serializable

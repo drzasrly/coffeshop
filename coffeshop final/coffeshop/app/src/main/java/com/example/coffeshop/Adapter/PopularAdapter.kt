@@ -41,10 +41,12 @@ class PopularAdapter(
             .load(imageUrl)
             .into(holder.binding.pic)
 
+        // Pastikan sebelum startActivity, ID item diisi sesuai posisinya di Firebase
         holder.itemView.setOnClickListener {
-            val intent = Intent(context, DetailActivity::class.java)
-            intent.putExtra("object", item) // ItemsModel sudah Serializable → aman
-            context.startActivity(intent)
+            val intent = Intent(holder.itemView.context, DetailActivity::class.java)
+            item.id = position // <--- Kuncinya di sini, berikan ID unik (0, 1, 2...)
+            intent.putExtra("object", item)
+            holder.itemView.context.startActivity(intent)
         }
     }
 

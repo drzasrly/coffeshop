@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
 import com.example.coffeshop.Domain.ItemsModel
 import com.example.coffeshop.Domain.WishlistRequest
@@ -18,6 +19,7 @@ import com.example.coffeshop.R
 import com.example.coffeshop.Repository.ApiService
 import com.example.coffeshop.Repository.RetrofitClient
 import com.example.coffeshop.databinding.ActivityDetailBinding
+import com.example.coffeshop.viewModel.WishlistViewModel
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -27,6 +29,7 @@ class DetailActivity : AppCompatActivity() {
     private lateinit var item: ItemsModel
     private lateinit var managmentCart: ManagmentCart
     private lateinit var apiInterface: ApiService
+    private lateinit var viewModel: WishlistViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,12 +38,15 @@ class DetailActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         managmentCart = ManagmentCart(this)
-
-        // Inisialisasi API Client
         apiInterface = RetrofitClient.apiService
 
+        // Inisialisasi ViewModel
+        viewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(application)
+        ).get(WishlistViewModel::class.java)
+
         bundle()
-        // initSizeList() // Aktifkan jika fungsi ini sudah ada kodenya
     }
 
     private fun updateFavoriteButton() {
@@ -59,10 +65,14 @@ class DetailActivity : AppCompatActivity() {
     private fun bundle() {
         binding.apply {
             backBtn.setOnClickListener { finish() }
-            wishlistBtn.visibility = View.VISIBLE
 
-            @Suppress("DEPRECATION")
-            item = intent.getSerializableExtra("object") as ItemsModel
+            val receivedItem = intent.getSerializableExtra("object") as? ItemsModel
+            if (receivedItem != null) {
+                item = receivedItem
+            } else {
+                finish()
+                return
+            }
 
             if (item.numberInCart == 0) { item.numberInCart = 1 }
             numberInCartTxt.text = item.numberInCart.toString()
@@ -79,53 +89,45 @@ class DetailActivity : AppCompatActivity() {
             ratingTxt.text = item.rating.toString()
 
             // LOGIKA KLIK WISHLIST
+            // LOGIKA KLIK WISHLIST
             wishlistBtn.setOnClickListener {
-                val isFav = managmentCart.isItemInWishlist(item)
-                if (isFav) {
-                    // 1. Hapus Lokal
+                // Pengecekan status awal sebelum aksi
+                val isCurrentlyFav = managmentCart.isItemInWishlist(item)
+                val currentMenuId = item.id.toString()
+
+                if (isCurrentlyFav) {
+                    // HAPUS: Panggil ViewModel dulu agar data ID konsisten
+                    viewModel.removeFromWishlist(currentMenuId)
+
+                    // Baru hapus dari ManagementCart (SharedPreferences/UI Helper)
                     managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener {
-                        override fun onChanged() {}
+                        override fun onChanged() {
+                            // Opsional: jalankan kode jika UI butuh update setelah data benar-benar hilang
+                        }
                     })
+
                     Toast.makeText(this@DetailActivity, "Removed from Wishlist", Toast.LENGTH_SHORT).show()
                 } else {
-                    // 1. Tambah Lokal (Supaya Ikon Cepat Berubah)
+                    // TAMBAH: Tambah ke ManagementCart dulu
                     managmentCart.addToWishlist(item)
 
-                    // 2. Tambah ke Laravel MySQL
-                    tambahKeWishlistLaravel(item.id.toString())
+                    // Kirim ke Laravel & Room via ViewModel
+                    viewModel.addProductToWishlist(
+                        menuId = currentMenuId,
+                        name = item.title,
+                        price = item.price.toString(),
+                        imageUrl = item.picUrl[0]
+                    )
 
                     Toast.makeText(this@DetailActivity, "Added to Wishlist", Toast.LENGTH_SHORT).show()
                 }
+
+                // Refresh status icon
                 updateFavoriteButton()
+
+                // Tambahkan Log untuk verifikasi di Logcat
+                Log.d("API_DEBUG", "Klik Tombol Wishlist - MenuID: $currentMenuId, Action: ${if (isCurrentlyFav) "DELETE" else "ADD"}")
             }
         }
-    }
-
-    private fun tambahKeWishlistLaravel(menuId: String) {
-        // Ambil token dari TokenManager
-        val token = TokenManager.instance.getToken()
-
-        if (token == null) {
-            Log.e("API_DEBUG", "Gagal: User belum login / Token tidak ditemukan")
-            return
-        }
-
-        val tokenHeader = "Bearer $token"
-        val request = WishlistRequest(menuId)
-
-        apiInterface.addWishlist(tokenHeader, request).enqueue(object : Callback<WishlistResponse> {
-            override fun onResponse(call: Call<WishlistResponse>, response: Response<WishlistResponse>) {
-                if (response.isSuccessful) {
-                    Log.d("API_DEBUG", "Berhasil simpan ke MySQL!")
-                } else {
-                    // Jika error 401 atau 500 akan tercetak di sini
-                    Log.e("API_DEBUG", "Gagal! Kode: ${response.code()} Error: ${response.errorBody()?.string()}")
-                }
-            }
-
-            override fun onFailure(call: Call<WishlistResponse>, t: Throwable) {
-                Log.e("API_DEBUG", "Koneksi ke Server Gagal: ${t.message}")
-            }
-        })
     }
 }

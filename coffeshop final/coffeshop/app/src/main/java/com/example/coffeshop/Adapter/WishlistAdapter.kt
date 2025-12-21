@@ -13,28 +13,24 @@ import com.example.coffeshop.Helper.ChangeNumberItemsListener
 import com.example.coffeshop.Helper.ManagmentCart
 // GANTI nama di bawah ini jika binding Anda bernama ItemWishlistBinding
 import com.example.coffeshop.databinding.ViewholderWishlistItemBinding
-
+import com.example.coffeshop.viewModel.WishlistViewModel
 
 class WishlistAdapter(
     private val listItemSelected: ArrayList<ItemsModel>,
     private val context: Context,
-    // Tambahkan listener yang baru dibuat
+    // Tambahkan ViewModel di sini
+    private val viewModel: WishlistViewModel,
     var wishlistChangeListener: WishlistChangeListener? = null
 ) : RecyclerView.Adapter<WishlistAdapter.Viewholder>() {
 
-    // Menggunakan ManagmentCart untuk logika Add to Cart dan Wishlist
     private val managmentCart = ManagmentCart(context)
 
-    // GANTI nama di bawah ini jika binding Anda bernama ItemWishlistBinding
     inner class Viewholder(val binding: ViewholderWishlistItemBinding) :
         RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): Viewholder {
-        // GANTI nama di bawah ini jika binding Anda bernama ItemWishlistBinding
         val binding = ViewholderWishlistItemBinding.inflate(
-            LayoutInflater.from(parent.context),
-            parent,
-            false
+            LayoutInflater.from(parent.context), parent, false
         )
         return Viewholder(binding)
     }
@@ -42,7 +38,6 @@ class WishlistAdapter(
     override fun onBindViewHolder(holder: Viewholder, position: Int) {
         val item = listItemSelected[position]
 
-        // 1. Bind Data ke UI Item Wishlist
         holder.binding.titleTxt.text = item.title
         holder.binding.priceTxt.text = "$${item.price}"
 
@@ -51,30 +46,34 @@ class WishlistAdapter(
             .apply(RequestOptions().transform(CenterCrop()))
             .into(holder.binding.picItem)
 
-        // 2. LISTENER: Tombol Delete (Hapus dari Wishlist)
+        // Tombol Delete
         holder.binding.deleteBtn.setOnClickListener {
-            // Asumsi: Anda memiliki fungsi removeFromWishlist yang menerima callback
-            managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener{
-                override fun onChanged() {
-                    // Perbarui daftar RecyclerView secara lokal
-                    listItemSelected.removeAt(holder.adapterPosition)
-                    notifyItemRemoved(holder.adapterPosition)
-                    notifyItemRangeChanged(holder.adapterPosition, listItemSelected.size)
+            val currentMenuId = item.id.toString()
 
-                    // Beri tahu Activity/Fragment bahwa data telah berubah
-                    wishlistChangeListener?.onWishlistChanged()
-                    Toast.makeText(context, "Item dihapus dari Wishlist", Toast.LENGTH_SHORT).show()
+            // 1. Hapus Permanen di Laravel & Room via ViewModel
+            viewModel.removeFromWishlist(currentMenuId)
+
+            // 2. Hapus dari UI Helper (ManagementCart SharedPreferences)
+            managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener {
+                override fun onChanged() {
+                    // 3. Update tampilan RecyclerView
+                    val currentPos = holder.adapterPosition
+                    if (currentPos != RecyclerView.NO_POSITION) {
+                        listItemSelected.removeAt(currentPos)
+                        notifyItemRemoved(currentPos)
+                        notifyItemRangeChanged(currentPos, listItemSelected.size)
+
+                        wishlistChangeListener?.onWishlistChanged()
+                        Toast.makeText(context, "Item dihapus dari favorit", Toast.LENGTH_SHORT).show()
+                    }
                 }
             })
         }
 
-        // 3. LISTENER: Tombol Tambah ke Keranjang
         holder.binding.addToCartBtn.setOnClickListener {
-            // Item Wishlist ditambahkan ke Cart dengan jumlah minimal 1
             if (item.numberInCart == 0) item.numberInCart = 1
-
-            managmentCart.insertItems(item) // Tambahkan ke keranjang belanja
-            Toast.makeText(holder.itemView.context, "${item.title} ditambahkan ke Keranjang!", Toast.LENGTH_SHORT).show()
+            managmentCart.insertItems(item)
+            Toast.makeText(holder.itemView.context, "${item.title} masuk keranjang!", Toast.LENGTH_SHORT).show()
         }
     }
 
