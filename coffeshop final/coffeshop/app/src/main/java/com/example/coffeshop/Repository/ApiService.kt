@@ -1,5 +1,6 @@
 package com.example.coffeshop.Repository
 
+import retrofit2.Response
 import LoginResponse
 import com.example.coffeshop.Domain.*
 import okhttp3.ResponseBody
@@ -54,4 +55,20 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("menu_id") menuId: String
     ): Call<ResponseBody>
+
+    @FormUrlEncoded
+    @POST("update-profile") // Sesuaikan dengan route di Laravel kamu
+    suspend fun updateProfile(
+        @Header("Authorization") token: String,
+        @Field("name") name: String
+        ): Response<UserResponse>
+
+    @FormUrlEncoded
+    @POST("change-password") // Sesuaikan dengan route di Laravel kamu
+    suspend fun changePassword(
+        @Header("Authorization") token: String,
+        @Field("old_password") oldPass: String,
+        @Field("new_password") newPass: String
+    ): retrofit2.Response<UserResponse> // Gunakan UserResponse yang sudah kita buat tadi
+
 }
