@@ -2,5 +2,6 @@ package com.example.coffeshop.Domain
 
 data class CartRequest(
     val menu_id: String,
-    val quantity: Int
+    val quantity: Int,
+    val size: String
 )

@@ -15,8 +15,9 @@ interface cartDao {
     @Query("DELETE FROM cart_table WHERE menu_id = :menuId")
     suspend fun deleteByMenuId(menuId: String)
 
-    @Query("UPDATE cart_table SET quantity = :qty WHERE menu_id = :menuId")
-    suspend fun updateQuantity(menuId: String, qty: Int)
+    // PERBAIKAN: Menambahkan 'suspend' agar query ini benar-benar dijalankan di database
+    @Query("UPDATE cart_table SET quantity = :newQty WHERE id = :id")
+    suspend fun updateQuantity(id: Int, newQty: Int) // Pastikan id di sini Int
 
     @Query("DELETE FROM cart_table")
     suspend fun clearCart()

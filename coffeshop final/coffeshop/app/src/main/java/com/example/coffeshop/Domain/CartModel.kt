@@ -12,5 +12,6 @@ data class CartModel(
     val name: String,
     val price: String, // Kita gunakan String agar konsisten dengan Wishlist
     val imageUrl: String?,
-    var quantity: Int = 1
+    var quantity: Int = 1,
+    val size: String
 ) : Serializable

@@ -13,7 +13,7 @@ import com.example.coffeshop.databinding.ViewholderCartBinding
 import com.example.coffeshop.viewModel.CartViewModel
 
 class CartAdapter(
-    private val listItemSelected: ArrayList<CartModel>,
+    private var listItemSelected: ArrayList<CartModel>,
     context: Context,
     private val cartViewModel: CartViewModel,
     var changeNumberItemsListener: ChangeNumberItemsListener? = null
@@ -31,48 +31,48 @@ class CartAdapter(
         return Viewholder(binding)
     }
 
+    fun updateData(newList: List<CartModel>) {
+        listItemSelected.clear()
+        listItemSelected.addAll(newList)
+        notifyDataSetChanged()
+    }
+
     override fun onBindViewHolder(holder: Viewholder, position: Int) {
         val item = listItemSelected[position]
 
         holder.binding.apply {
-            // Sinkronisasi Data ke View
-            titleTxt.text = item.name
+            titleTxt.text = "${item.name} (${item.size})"
             feeEachItem.text = "$${item.price}"
 
-            // Perhitungan total harga per baris
             val priceValue = item.price.toDoubleOrNull() ?: 0.0
             val totalItemPrice = Math.round((item.quantity * priceValue) * 100.0) / 100.0
             totalEachItem.text = "$$totalItemPrice"
-
-            // ID di XML kamu adalah numberInCartTxt
             numberInCartTxt.text = item.quantity.toString()
 
-            // Load Gambar ke picCart
             Glide.with(holder.itemView.context)
                 .load(item.imageUrl)
                 .apply(RequestOptions().transform(CenterCrop()))
                 .into(picCart)
 
-            // Logika Tombol Plus (ID: plusBtn)
+            // ... di dalam onBindViewHolder ...
             plusBtn.setOnClickListener {
                 val newQty = item.quantity + 1
-                cartViewModel.updateQuantity(item.menu_id, newQty)
+                // Kirim ID (Primary Key) dan newQty
+                cartViewModel.updateQuantity(item.id, newQty)
                 changeNumberItemsListener?.onChanged()
             }
 
-            // Logika Tombol Minus (ID: minusBtn)
             minusBtn.setOnClickListener {
                 if (item.quantity > 1) {
                     val newQty = item.quantity - 1
-                    cartViewModel.updateQuantity(item.menu_id, newQty)
+                    cartViewModel.updateQuantity(item.id, newQty)
                 } else {
-                    // Jika tinggal 1, hapus dari database
                     cartViewModel.removeFromCart(item.menu_id)
                 }
                 changeNumberItemsListener?.onChanged()
             }
+// HAPUS SEMUA KODE DI BAWAH KURUNG KURAWAL TERAKHIR KELAS CartAdapter
 
-            // Logika Tombol Remove (ID: removeItemBtn)
             removeItemBtn.setOnClickListener {
                 cartViewModel.removeFromCart(item.menu_id)
                 changeNumberItemsListener?.onChanged()
@@ -81,10 +81,4 @@ class CartAdapter(
     }
 
     override fun getItemCount(): Int = listItemSelected.size
-}
-
-private fun CartViewModel.updateQuantity(
-    menuId: String,
-    newQty: Int
-) {
 }

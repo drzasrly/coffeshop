@@ -20,11 +20,11 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
 
     val localCart = cartDao.getAllCart().asLiveData()
 
-    fun addToCart(menuId: String, name: String, price: String, imageUrl: String?, qty: Int) {
+    fun addToCart(menuId: String, name: String, price: String, imageUrl: String?, qty: Int, size: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = TokenManager.instance.getToken()
-                val response = apiService.addCart("Bearer $token", CartRequest(menuId, qty)).execute()
+                val response = apiService.addCart("Bearer $token", CartRequest(menuId, qty, size)).execute()
 
                 if (response.isSuccessful) {
                     val dataToSave = CartModel(
@@ -32,7 +32,8 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                         name = name,
                         price = price,
                         imageUrl = imageUrl,
-                        quantity = qty
+                        quantity = qty,
+                        size = size
                     )
                     cartDao.addCart(dataToSave)
                     Log.d("CART_DEBUG", "SUKSES: Masuk Cart Laravel & Lokal")
@@ -43,15 +44,12 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Tambahkan ini di CartViewModel.kt
     fun fetchCartFromApi() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = TokenManager.instance.getToken()
                 val response = apiService.getCart("Bearer $token").execute()
                 if (response.isSuccessful) {
-                    // Parse response body dan simpan ke Room
-                    // (Logika parsing tergantung format JSON dari Laravel Anda)
                     Log.d("CART_DEBUG", "Berhasil sinkron data dari server ke lokal")
                 }
             } catch (e: Exception) {
@@ -70,6 +68,18 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 Log.e("CART_DEBUG", "ERROR HAPUS: ${e.message}")
+            }
+        }
+    } // Kurung kurawal penutup removeFromCart dipindah ke sini
+
+    // Pastikan parameter id adalah Int
+    fun updateQuantity(id: Int, newQty: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                cartDao.updateQuantity(id, newQty)
+                Log.d("CART_DEBUG", "Berhasil update ID $id ke SQL")
+            } catch (e: Exception) {
+                Log.e("CART_DEBUG", "Gagal update: ${e.message}")
             }
         }
     }

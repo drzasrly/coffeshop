@@ -2,7 +2,6 @@ package com.example.coffeshop.Activity
 
 import android.os.Bundle
 import android.util.Log
-import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -17,17 +16,18 @@ import com.example.coffeshop.Repository.ApiService
 import com.example.coffeshop.Repository.RetrofitClient
 import com.example.coffeshop.databinding.ActivityDetailBinding
 import com.example.coffeshop.viewModel.WishlistViewModel
-import com.example.coffeshop.viewModel.CartViewModel // Pastikan di-import
+import com.example.coffeshop.viewModel.CartViewModel
 
 class DetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailBinding
     private lateinit var item: ItemsModel
     private lateinit var managmentCart: ManagmentCart
     private lateinit var apiInterface: ApiService
-    private lateinit var viewModel: WishlistViewModel
-
-    // 1. TAMBAHKAN deklarasi viewModelCart di sini agar tidak error
+    private lateinit var viewModelWishlist: WishlistViewModel
     private lateinit var viewModelCart: CartViewModel
+
+    // Variabel lokal untuk menampung jumlah yang akan dibeli
+    private var numberOrder = 1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,21 +38,148 @@ class DetailActivity : AppCompatActivity() {
         managmentCart = ManagmentCart(this)
         apiInterface = RetrofitClient.apiService
 
-        // Inisialisasi Wishlist ViewModel
-        viewModel = ViewModelProvider(
+        // Inisialisasi ViewModels
+        viewModelWishlist = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(application)
         ).get(WishlistViewModel::class.java)
 
-        // 2. INISIALISASI CartViewModel
         viewModelCart = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(application)
         ).get(CartViewModel::class.java)
-
-        bundle()
+        setupSizeSelection()
+        getBundle()
     }
 
+    private fun getBundle() {
+        binding.apply {
+            // Tombol Kembali
+            backBtn.setOnClickListener { finish() }
+
+            // Ambil data dari Intent
+            val receivedItem = intent.getSerializableExtra("object") as? ItemsModel
+            if (receivedItem != null) {
+                item = receivedItem
+            } else {
+                finish()
+                return
+            }
+
+            // Set Data ke UI
+            titleTxt.text = item.title
+            descTxt.text = item.description
+            priceTxt.text = "Rp" + item.price.toString()
+            ratingTxt.text = item.rating.toString()
+            numberInCartTxt.text = numberOrder.toString()
+
+            Glide.with(this@DetailActivity)
+                .load(item.picUrl[0])
+                .into(picMain)
+
+            updateFavoriteButton()
+
+            // --- LOGIKA TOMBOL QUANTITY (PLUS & MINUS) ---
+
+            plusBtn.setOnClickListener {
+                numberOrder++
+                numberInCartTxt.text = numberOrder.toString()
+            }
+
+            minusBtn.setOnClickListener {
+                if (numberOrder > 1) {
+                    numberOrder--
+                    numberInCartTxt.text = numberOrder.toString()
+                }
+            }
+
+            // --- LOGIKA ADD TO CART ---
+
+            // Di dalam fungsi bundle() atau getBundle()
+            addToCartBtn.setOnClickListener {
+                val qty = numberInCartTxt.text.toString().toInt()
+
+                // Panggil ViewModel dengan tambahan parameter selectedSize
+                viewModelCart.addToCart(
+                    menuId = item.id.toString(),
+                    name = item.title,
+                    price = item.price.toString(),
+                    imageUrl = item.picUrl[0],
+                    qty = qty,
+                    size = selectedSize // <--- Tambahkan ini
+                )
+
+                Toast.makeText(this@DetailActivity, "Added to cart: $selectedSize", Toast.LENGTH_SHORT).show()
+            }
+
+            // --- LOGIKA WISHLIST ---
+
+            wishlistBtn.setOnClickListener {
+                val isCurrentlyFav = managmentCart.isItemInWishlist(item)
+                val currentMenuId = item.id.toString()
+
+                if (isCurrentlyFav) {
+                    viewModelWishlist.removeFromWishlist(currentMenuId)
+                    managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener {
+                        override fun onChanged() {}
+                    })
+                    Toast.makeText(this@DetailActivity, "Removed from Wishlist", Toast.LENGTH_SHORT).show()
+                } else {
+                    managmentCart.addToWishlist(item)
+                    viewModelWishlist.addProductToWishlist(
+                        menuId = currentMenuId,
+                        name = item.title,
+                        price = item.price.toString(),
+                        imageUrl = item.picUrl[0]
+                    )
+                    Toast.makeText(this@DetailActivity, "Added to Wishlist", Toast.LENGTH_SHORT).show()
+                }
+                updateFavoriteButton()
+            }
+        }
+    }
+
+    // Di dalam class DetailActivity
+    private var selectedSize: String = "Small" // Default selection
+
+    private fun setupSizeSelection() {
+        binding.apply {
+            // Klik Small
+            smallBtn.setOnClickListener {
+                selectedSize = "Small"
+                updateSizeUI("Small")
+            }
+
+            // Klik Medium
+            mediumBtn.setOnClickListener {
+                selectedSize = "Medium"
+                updateSizeUI("Medium")
+            }
+
+            // Klik Large
+            LargeBtn.setOnClickListener {
+                selectedSize = "Large"
+                updateSizeUI("Large")
+            }
+        }
+    }
+
+    private fun updateSizeUI(size: String) {
+        binding.apply {
+            // Reset warna semua tombol ke default (Dark Brown)
+            smallBtn.setTextColor(ContextCompat.getColor(this@DetailActivity, R.color.darkBrown))
+            mediumBtn.setTextColor(ContextCompat.getColor(this@DetailActivity, R.color.darkBrown))
+            LargeBtn.setTextColor(ContextCompat.getColor(this@DetailActivity, R.color.darkBrown))
+
+            // Berikan tanda pada yang dipilih (Misal: ganti warna atau background)
+            // Jika kamu punya drawable khusus untuk "selected", gunakan setBackgroundResource
+            when (size) {
+                "Small" -> smallBtn.setTextColor(ContextCompat.getColor(this@DetailActivity, R.color.white))
+                "Medium" -> mediumBtn.setTextColor(ContextCompat.getColor(this@DetailActivity, R.color.white))
+                "Large" -> LargeBtn.setTextColor(ContextCompat.getColor(this@DetailActivity, R.color.white))
+            }
+        }
+    }
     private fun updateFavoriteButton() {
         val isFav = managmentCart.isItemInWishlist(item)
         if (isFav) {
@@ -64,75 +191,6 @@ class DetailActivity : AppCompatActivity() {
                 ContextCompat.getColor(this, R.color.darkBrown)
             )
         }
-    }
 
-    private fun bundle() {
-        binding.apply {
-            backBtn.setOnClickListener { finish() }
-
-            val receivedItem = intent.getSerializableExtra("object") as? ItemsModel
-            if (receivedItem != null) {
-                item = receivedItem
-            } else {
-                finish()
-                return
-            }
-
-            if (item.numberInCart == 0) { item.numberInCart = 1 }
-            numberInCartTxt.text = item.numberInCart.toString()
-
-            updateFavoriteButton()
-
-            Glide.with(this@DetailActivity)
-                .load(item.picUrl[0])
-                .into(picMain)
-
-            titleTxt.text = item.title
-            descTxt.text = item.description
-            priceTxt.text = "$" + item.price.toString()
-            ratingTxt.text = item.rating.toString()
-
-            // LOGIKA KLIK WISHLIST
-            wishlistBtn.setOnClickListener {
-                val isCurrentlyFav = managmentCart.isItemInWishlist(item)
-                val currentMenuId = item.id.toString()
-
-                if (isCurrentlyFav) {
-                    viewModel.removeFromWishlist(currentMenuId)
-                    managmentCart.removeFromWishlist(item, object : ChangeNumberItemsListener {
-                        override fun onChanged() {}
-                    })
-                    Toast.makeText(this@DetailActivity, "Removed from Wishlist", Toast.LENGTH_SHORT).show()
-                } else {
-                    managmentCart.addToWishlist(item)
-                    viewModel.addProductToWishlist(
-                        menuId = currentMenuId,
-                        name = item.title,
-                        price = item.price.toString(),
-                        imageUrl = item.picUrl[0]
-                    )
-                    Toast.makeText(this@DetailActivity, "Added to Wishlist", Toast.LENGTH_SHORT).show()
-                }
-                updateFavoriteButton()
-                Log.d("API_DEBUG", "Klik Tombol Wishlist - MenuID: $currentMenuId, Action: ${if (isCurrentlyFav) "DELETE" else "ADD"}")
-            }
-
-            // LOGIKA KLIK ADD TO CART
-            addToCartBtn.setOnClickListener {
-                val qty = numberInCartTxt.text.toString().toInt()
-
-                // Sekarang viewModelCart sudah terdefinisi
-                viewModelCart.addToCart(
-                    menuId = item.id.toString(),
-                    name = item.title,
-                    price = item.price.toString(), // Pastikan parameter di ViewModel adalah String
-                    imageUrl = item.picUrl[0],
-                    qty = qty
-                )
-
-                // 3. Pastikan memanggil .show() pada Toast
-                Toast.makeText(this@DetailActivity, "Ditambahkan ke Keranjang", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 }
