@@ -18,13 +18,25 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
     private val apiService = RetrofitClient.apiService
     private val cartDao = AppDatabase.getDatabase(application).cartDao()
 
+    // ✅ SUDAH BENAR
     val localCart = cartDao.getAllCart().asLiveData()
 
-    fun addToCart(menuId: String, name: String, price: String, imageUrl: String?, qty: Int, size: String) {
+    // ✅ SUDAH BENAR
+    fun addToCart(
+        menuId: String,
+        name: String,
+        price: String,
+        imageUrl: String?,
+        qty: Int,
+        size: String
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = TokenManager.instance.getToken()
-                val response = apiService.addCart("Bearer $token", CartRequest(menuId, qty, size)).execute()
+                val response = apiService.addCart(
+                    "Bearer $token",
+                    CartRequest(menuId, qty, size)
+                ).execute()
 
                 if (response.isSuccessful) {
                     val dataToSave = CartModel(
@@ -36,51 +48,51 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                         size = size
                     )
                     cartDao.addCart(dataToSave)
-                    Log.d("CART_DEBUG", "SUKSES: Masuk Cart Laravel & Lokal")
+                    Log.d("CART_DEBUG", "SUKSES add cart")
                 }
             } catch (e: Exception) {
-                Log.e("CART_DEBUG", "ERROR: ${e.message}")
+                Log.e("CART_DEBUG", "ERROR add cart: ${e.message}")
             }
         }
     }
 
-    fun fetchCartFromApi() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val token = TokenManager.instance.getToken()
-                val response = apiService.getCart("Bearer $token").execute()
-                if (response.isSuccessful) {
-                    Log.d("CART_DEBUG", "Berhasil sinkron data dari server ke lokal")
-                }
-            } catch (e: Exception) {
-                Log.e("CART_DEBUG", "Gagal fetch data: ${e.message}")
-            }
-        }
-    }
-
+    // ✅ SUDAH BENAR
     fun removeFromCart(menuId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val token = TokenManager.instance.getToken()
-                val response = apiService.removeFromCart("Bearer $token", menuId).execute()
+                val response =
+                    apiService.removeFromCart("Bearer $token", menuId).execute()
+
                 if (response.isSuccessful) {
                     cartDao.deleteByMenuId(menuId)
                 }
             } catch (e: Exception) {
-                Log.e("CART_DEBUG", "ERROR HAPUS: ${e.message}")
-            }
-        }
-    } // Kurung kurawal penutup removeFromCart dipindah ke sini
-
-    // Pastikan parameter id adalah Int
-    fun updateQuantity(id: Int, newQty: Int) {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                cartDao.updateQuantity(id, newQty)
-                Log.d("CART_DEBUG", "Berhasil update ID $id ke SQL")
-            } catch (e: Exception) {
-                Log.e("CART_DEBUG", "Gagal update: ${e.message}")
+                Log.e("CART_DEBUG", "ERROR remove: ${e.message}")
             }
         }
     }
+
+    // ✅ INI YANG PENTING (TIDAK MENGHAPUS YANG LAMA)
+    fun updateQuantity(menuId: String, localId: Int, newQty: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // 1️⃣ Update LOCAL (Room) → sumber utama UI
+                cartDao.updateQuantity(localId, newQty)
+
+                // 2️⃣ Update SERVER (SET quantity, BUKAN tambah)
+                val token = TokenManager.instance.getToken()
+                apiService.updateCartQuantity(
+                    "Bearer $token",
+                    menuId,
+                    CartRequest(menuId, newQty, "")
+                ).execute()
+
+                Log.d("CART_DEBUG", "Qty SET -> $newQty")
+            } catch (e: Exception) {
+                Log.e("CART_DEBUG", "ERROR update qty: ${e.message}")
+            }
+        }
+    }
+
 }

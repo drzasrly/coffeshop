@@ -38,24 +38,29 @@ interface ApiService {
         @Path("menu_id") menuId: String
     ): Call<ResponseBody>
 
-    // Get All Cart
     @GET("cart")
-    fun getCart(@Header("Authorization") token: String): Call<ResponseBody>
+    fun getCart(
+        @Header("Authorization") token: String
+    ): Call<ResponseBody>
 
-    // Add/Update Cart
     @POST("cart")
     fun addCart(
         @Header("Authorization") token: String,
         @Body request: CartRequest
     ): Call<ResponseBody>
 
-    // Delete Cart
+    @PUT("cart/{menu_id}")
+    fun updateCart(
+        @Header("Authorization") token: String,
+        @Path("menu_id") menuId: String,
+        @Body request: CartUpdateRequest
+    ): Call<ResponseBody>
+
     @DELETE("cart/{menu_id}")
     fun removeFromCart(
         @Header("Authorization") token: String,
         @Path("menu_id") menuId: String
     ): Call<ResponseBody>
-
     @FormUrlEncoded
     @POST("update-profile") // Sesuaikan dengan route di Laravel kamu
     suspend fun updateProfile(
@@ -70,5 +75,25 @@ interface ApiService {
         @Field("old_password") oldPass: String,
         @Field("new_password") newPass: String
     ): retrofit2.Response<UserResponse> // Gunakan UserResponse yang sudah kita buat tadi
+
+    @PATCH("cart/{menu_id}")
+    fun updateCartQuantity(
+        @Header("Authorization") token: String,
+        @Path("menu_id") menuId: String,
+        @Body request: CartRequest
+    ): Call<ResponseBody>
+
+
+    @POST("orders")
+    suspend fun createOrder(
+        @Header("Authorization") token: String,
+        @Body request: OrderRequest
+    ): Response<Any>
+
+
+    @GET("orders")
+    fun getOrders(
+        @Header("Authorization") token: String
+    ): Call<ResponseBody>
 
 }

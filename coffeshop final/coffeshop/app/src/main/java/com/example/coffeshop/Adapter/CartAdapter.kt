@@ -8,15 +8,13 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.request.RequestOptions
 import com.example.coffeshop.Domain.CartModel
-import com.example.coffeshop.Helper.ChangeNumberItemsListener
 import com.example.coffeshop.databinding.ViewholderCartBinding
 import com.example.coffeshop.viewModel.CartViewModel
 
 class CartAdapter(
     private var listItemSelected: ArrayList<CartModel>,
     context: Context,
-    private val cartViewModel: CartViewModel,
-    var changeNumberItemsListener: ChangeNumberItemsListener? = null
+    private val cartViewModel: CartViewModel
 ) : RecyclerView.Adapter<CartAdapter.Viewholder>() {
 
     class Viewholder(val binding: ViewholderCartBinding) :
@@ -45,8 +43,7 @@ class CartAdapter(
             feeEachItem.text = "$${item.price}"
 
             val priceValue = item.price.toDoubleOrNull() ?: 0.0
-            val totalItemPrice = Math.round((item.quantity * priceValue) * 100.0) / 100.0
-            totalEachItem.text = "$$totalItemPrice"
+            totalEachItem.text = "$${priceValue * item.quantity}"
             numberInCartTxt.text = item.quantity.toString()
 
             Glide.with(holder.itemView.context)
@@ -54,28 +51,29 @@ class CartAdapter(
                 .apply(RequestOptions().transform(CenterCrop()))
                 .into(picCart)
 
-            // ... di dalam onBindViewHolder ...
+            // ✅ FIX UTAMA (TIDAK UBAH UI MANUAL)
             plusBtn.setOnClickListener {
-                val newQty = item.quantity + 1
-                // Kirim ID (Primary Key) dan newQty
-                cartViewModel.updateQuantity(item.id, newQty)
-                changeNumberItemsListener?.onChanged()
+                cartViewModel.updateQuantity(
+                    menuId = item.menu_id,
+                    localId = item.id,
+                    newQty = item.quantity + 1
+                )
             }
 
             minusBtn.setOnClickListener {
                 if (item.quantity > 1) {
-                    val newQty = item.quantity - 1
-                    cartViewModel.updateQuantity(item.id, newQty)
+                    cartViewModel.updateQuantity(
+                        menuId = item.menu_id,
+                        localId = item.id,
+                        newQty = item.quantity - 1
+                    )
                 } else {
                     cartViewModel.removeFromCart(item.menu_id)
                 }
-                changeNumberItemsListener?.onChanged()
             }
-// HAPUS SEMUA KODE DI BAWAH KURUNG KURAWAL TERAKHIR KELAS CartAdapter
 
             removeItemBtn.setOnClickListener {
                 cartViewModel.removeFromCart(item.menu_id)
-                changeNumberItemsListener?.onChanged()
             }
         }
     }

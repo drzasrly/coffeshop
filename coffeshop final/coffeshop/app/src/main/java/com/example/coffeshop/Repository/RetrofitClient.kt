@@ -10,7 +10,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
     // Gunakan 10.0.2.2 jika Anda menggunakan Emulator Android bawaan.
     // IP 192.168.x.x hanya digunakan jika Anda pakai HP Fisik.
-    private const val BASE_URL = "http://192.168.110.50:8000/api/"
+    private const val BASE_URL = "http://10.13.178.96:8000/api/"
 
     private val client: OkHttpClient by lazy {
         // Logging Interceptor sangat penting agar error API muncul di Logcat
