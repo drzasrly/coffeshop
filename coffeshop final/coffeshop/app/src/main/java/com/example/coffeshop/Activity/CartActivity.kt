@@ -15,7 +15,7 @@ import com.example.coffeshop.viewModel.CartViewModel
 class CartActivity : AppCompatActivity() {
     private var subtotalValue = 0.0
     private var taxValue = 0.0
-    private var deliveryValue = 15.0
+    private var deliveryValue = 15000.0 // Contoh biaya ongkir Rp 15.000
     private var totalValue = 0.0
     private var itemList: ArrayList<CartModel> = arrayListOf()
 
@@ -29,58 +29,84 @@ class CartActivity : AppCompatActivity() {
         binding = ActivityCartBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Gunakan ViewModelProvider yang standar
         viewModel = ViewModelProvider(this)[CartViewModel::class.java]
 
         initCartList()
+
+        // Tombol Kembali
         binding.backBtn.setOnClickListener { finish() }
 
+        // Tombol Checkout
         binding.tocheckout.setOnClickListener {
-            if (itemList.isNotEmpty()) {
+            // Filter hanya item yang dicentang (isSelected == true)
+            val selectedItems = itemList.filter { it.isSelected }
+
+            if (selectedItems.isNotEmpty()) {
                 val intent = Intent(this, CheckoutActivity::class.java).apply {
                     putExtra("subtotal", subtotalValue)
                     putExtra("tax", taxValue)
-                    putExtra("delivery", deliveryValue)
+                    putExtra("delivery", if (subtotalValue > 0) deliveryValue else 0.0)
                     putExtra("total", totalValue)
-                    // Pastikan dikirim sebagai ArrayList
-                    putExtra("cartItems", itemList)
+                    // Mengirimkan list item yang hanya dipilih saja
+                    putExtra("cartItems", ArrayList(selectedItems))
                 }
                 startActivity(intent)
             } else {
-                Toast.makeText(this, "Keranjang kosong", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Silakan pilih minimal satu item untuk checkout", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun initCartList() {
-        cartAdapter = CartAdapter(arrayListOf(), this, viewModel)
+        // Inisialisasi adapter dengan callback untuk hitung ulang saat checkbox diklik
+        cartAdapter = CartAdapter(arrayListOf(), this, viewModel) {
+            // Ini dipanggil setiap kali checkbox di item diklik
+            calculateCartFromRoom(itemList)
+        }
+
         binding.listView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
         binding.listView.adapter = cartAdapter
 
+        // Mengobservasi data dari Room secara real-time
         viewModel.localCart.observe(this) { items ->
-            itemList = ArrayList(items)
-            cartAdapter.updateData(items)
-            calculateCartFromRoom(items)
+            if (items != null) {
+                // Saat data baru datang dari database, kita update itemList
+                // Catatan: Default isSelected biasanya false dari model
+                itemList = ArrayList(items)
+                cartAdapter.updateData(items)
+                calculateCartFromRoom(items)
+            }
         }
     }
 
     private fun calculateCartFromRoom(items: List<CartModel>) {
-        val percentTax = 0.02
+        val percentTax = 0.02 // Pajak 2%
         var fee = 0.0
-        for (item in items) {
-            val priceValue = item.price.toDoubleOrNull() ?: 0.0
-            fee += priceValue * item.quantity
-        }
-        val tax = fee * percentTax
-        val total = fee + tax + deliveryValue
 
+        // LOGIKA UTAMA: Hanya hitung item yang isSelected == true
+        val selectedItems = items.filter { it.isSelected }
+
+        for (item in selectedItems) {
+            // Bersihkan format harga (menghilangkan Rp atau titik jika ada)
+            val cleanPrice = item.price.replace(Regex("[^\\d.]"), "").toDoubleOrNull() ?: 0.0
+            fee += cleanPrice * item.quantity
+        }
+
+        // Jika tidak ada item dipilih, ongkir jadi 0
+        val currentDelivery = if (selectedItems.isNotEmpty()) deliveryValue else 0.0
+
+        val tax = fee * percentTax
+        val total = fee + tax + currentDelivery
+
+        // Simpan ke variabel global untuk dikirim ke CheckoutActivity
         subtotalValue = fee
         taxValue = tax
         totalValue = total
 
+        // Update UI
         binding.totalFeeTxt.text = "Rp ${fee.toInt()}"
         binding.totalTaxTxt.text = "Rp ${tax.toInt()}"
-        binding.deliveryTxt.text = "Rp ${deliveryValue.toInt()}"
+        binding.deliveryTxt.text = "Rp ${currentDelivery.toInt()}"
         binding.totalTxt.text = "Rp ${total.toInt()}"
     }
 }

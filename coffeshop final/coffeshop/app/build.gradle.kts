@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.google.gms.google.services)
     // 1. TAMBAHKAN PLUGIN KAPT (Penting untuk Room)
     id("kotlin-kapt")
+
+    id ("kotlin-parcelize")
 }
 
 android {

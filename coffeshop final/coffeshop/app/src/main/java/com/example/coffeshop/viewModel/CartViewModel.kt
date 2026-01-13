@@ -18,10 +18,9 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
     private val apiService = RetrofitClient.apiService
     private val cartDao = AppDatabase.getDatabase(application).cartDao()
 
-    // ✅ SUDAH BENAR
+    // Ambil data dari database Room
     val localCart = cartDao.getAllCart().asLiveData()
 
-    // ✅ SUDAH BENAR
     fun addToCart(
         menuId: String,
         name: String,
@@ -31,7 +30,22 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         size: String
     ) {
         viewModelScope.launch(Dispatchers.IO) {
+            // 1️⃣ LANGSUNG SIMPAN KE LOKAL (Agar UI tidak kosong)
+            val dataToSave = CartModel(
+                menu_id = menuId,
+                name = name,
+                price = price,
+                imageUrl = imageUrl,
+                quantity = qty,
+                size = size
+            )
+
             try {
+                // Simpan ke Room
+                cartDao.addCart(dataToSave)
+                Log.d("CART_DEBUG", "LOKAL: Berhasil simpan ke Room")
+
+                // 2️⃣ BARU SINKRON KE SERVER
                 val token = TokenManager.instance.getToken()
                 val response = apiService.addCart(
                     "Bearer $token",
@@ -39,33 +53,28 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                 ).execute()
 
                 if (response.isSuccessful) {
-                    val dataToSave = CartModel(
-                        menu_id = menuId,
-                        name = name,
-                        price = price,
-                        imageUrl = imageUrl,
-                        quantity = qty,
-                        size = size
-                    )
-                    cartDao.addCart(dataToSave)
-                    Log.d("CART_DEBUG", "SUKSES add cart")
+                    Log.d("CART_DEBUG", "SERVER: Berhasil sinkron ke API")
+                } else {
+                    Log.e("CART_DEBUG", "SERVER GAGAL: ${response.code()} - ${response.message()}")
                 }
             } catch (e: Exception) {
-                Log.e("CART_DEBUG", "ERROR add cart: ${e.message}")
+                // Jika internet mati, data tetap ada di lokal (Room)
+                Log.e("CART_DEBUG", "NETWORK ERROR: ${e.message}")
             }
         }
     }
 
-    // ✅ SUDAH BENAR
     fun removeFromCart(menuId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = TokenManager.instance.getToken()
-                val response =
-                    apiService.removeFromCart("Bearer $token", menuId).execute()
+                // Hapus lokal dulu agar user merasa cepat
+                cartDao.deleteByMenuId(menuId)
 
-                if (response.isSuccessful) {
-                    cartDao.deleteByMenuId(menuId)
+                val token = TokenManager.instance.getToken()
+                val response = apiService.removeFromCart("Bearer $token", menuId).execute()
+
+                if (!response.isSuccessful) {
+                    Log.e("CART_DEBUG", "Gagal hapus di server")
                 }
             } catch (e: Exception) {
                 Log.e("CART_DEBUG", "ERROR remove: ${e.message}")
@@ -73,26 +82,26 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // ✅ INI YANG PENTING (TIDAK MENGHAPUS YANG LAMA)
     fun updateQuantity(menuId: String, localId: Int, newQty: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 1️⃣ Update LOCAL (Room) → sumber utama UI
+                // 1. Update lokal (Room) segera
                 cartDao.updateQuantity(localId, newQty)
 
-                // 2️⃣ Update SERVER (SET quantity, BUKAN tambah)
+                // 2. Update server
                 val token = TokenManager.instance.getToken()
-                apiService.updateCartQuantity(
+                val response = apiService.updateCartQuantity(
                     "Bearer $token",
                     menuId,
                     CartRequest(menuId, newQty, "")
                 ).execute()
 
-                Log.d("CART_DEBUG", "Qty SET -> $newQty")
+                if (response.isSuccessful) {
+                    Log.d("CART_DEBUG", "SERVER: Qty terupdate ke $newQty")
+                }
             } catch (e: Exception) {
                 Log.e("CART_DEBUG", "ERROR update qty: ${e.message}")
             }
         }
     }
-
 }
