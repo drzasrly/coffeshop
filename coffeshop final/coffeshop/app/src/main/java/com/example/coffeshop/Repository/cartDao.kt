@@ -21,4 +21,7 @@ interface cartDao {
 
     @Query("DELETE FROM cart_table")
     suspend fun clearCart()
+
+    @Query("DELETE FROM cart_table WHERE menu_id IN (:menuIds)")
+    suspend fun deleteCheckoutedItems(menuIds: List<String>)
 }

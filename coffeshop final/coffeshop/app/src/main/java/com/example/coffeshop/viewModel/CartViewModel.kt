@@ -104,4 +104,12 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+    fun clearSelectedItems(items: List<CartModel>) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val ids = items.map { it.menu_id }
+            // Panggil fungsi delete dari DAO/Repository Anda
+            // Contoh: repository.deleteCheckoutedItems(ids)
+            cartDao.deleteCheckoutedItems(ids)
+        }
+    }
 }
