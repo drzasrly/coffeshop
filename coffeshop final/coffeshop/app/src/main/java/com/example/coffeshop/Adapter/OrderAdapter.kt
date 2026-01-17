@@ -1,15 +1,14 @@
 package com.example.coffeshop.Adapter
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.coffeshop.Domain.OrderModel
+import com.example.coffeshop.R
 import com.example.coffeshop.databinding.ViewholderOrderItemBinding
-import com.google.firebase.database.FirebaseDatabase
 
 class OrderAdapter(private val orders: List<OrderModel>) :
     RecyclerView.Adapter<OrderAdapter.ViewHolder>() {
@@ -28,62 +27,37 @@ class OrderAdapter(private val orders: List<OrderModel>) :
         val context = holder.itemView.context
 
         with(holder.binding) {
-            // 1. Set Data Dasar
             dateTxt.text = order.date
+
+            // Tampilan Status Aktif
             statusTxt.text = order.status
-            totalPriceTxt.text = "Rp ${order.totalPrice}"
+            statusTxt.background = null
 
-            // 2. Logika Tampilan Item (Judul & Gambar)
-            if (order.items.isNotEmpty()) {
-                val firstItem = order.items[0]
-
-                // Menampilkan nama produk pertama + info tambahan jika lebih dari 1
-                titleTxt.text = if (order.items.size > 1) {
-                    "${firstItem.title} & ${order.items.size - 1} lainnya"
-                } else {
-                    firstItem.title
-                }
-
-                qtyInfoTxt.text = "${order.items.size} Item"
-
-                // PERBAIKAN GLIDE: Menggunakan link String langsung
-                Glide.with(context)
-                    .load(firstItem.picUrl)
-                    .into(picOrder)
+            // Logika Warna Status
+            when (order.status) {
+                "Selesai" -> statusTxt.setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
+                "Proses", "Diproses Admin" -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.orange))
+                else -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.darkBrown))
             }
 
-            // 3. Logika Tombol "Pesanan Diterima" (Update Status)
-            // Tombol hanya muncul jika pesanan belum "Selesai"
-            if (order.status == "Selesai") {
-                finishBtn.visibility = View.GONE
-            } else {
-                finishBtn.visibility = View.VISIBLE
+            // Menampilkan Harga dari Database (Bukan Rp 0)
+            totalPriceTxt.text = "Rp ${String.format("%,.0f", order.totalPrice)}"
+
+            if (!order.items.isNullOrEmpty()) {
+                // PERBAIKAN: Menampilkan semua nama produk yang dibeli
+                // Contoh: "Cappuccino, Espresso"
+                val allProductNames = order.items.joinToString(", ") { it.title }
+                titleTxt.text = allProductNames
+
+                // Menghitung total cup
+                val totalQty = order.items.sumOf { it.quantity }
+                qtyInfoTxt.text = "$totalQty Item"
+
+                // Menggunakan gambar produk pertama sebagai ikon
+                Glide.with(context).load(order.items[0].picUrl).into(picOrder)
             }
 
-            finishBtn.setOnClickListener {
-                updateOrderStatusInFirebase(order.orderId, context)
-            }
-        }
-    }
-
-    /**
-     * Fungsi untuk memperbarui field 'status' pada pesanan tertentu di Firebase
-     */
-    private fun updateOrderStatusInFirebase(orderId: String, context: Context) {
-        if (orderId.isEmpty()) {
-            Toast.makeText(context, "ID Pesanan tidak valid", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val dbRef = FirebaseDatabase.getInstance().getReference("Orders").child(orderId)
-
-        // Hanya memperbarui bagian status saja
-        val updates = mapOf<String, Any>("status" to "Selesai")
-
-        dbRef.updateChildren(updates).addOnSuccessListener {
-            Toast.makeText(context, "Pesanan Berhasil Diselesaikan!", Toast.LENGTH_SHORT).show()
-        }.addOnFailureListener {
-            Toast.makeText(context, "Gagal memperbarui status: ${it.message}", Toast.LENGTH_SHORT).show()
+            finishBtn.visibility = View.GONE
         }
     }
 
