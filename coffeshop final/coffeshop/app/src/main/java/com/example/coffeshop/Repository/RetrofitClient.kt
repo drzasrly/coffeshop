@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    private const val BASE_URL = "http://192.168.110.19:8000/api/"
+    private const val BASE_URL = "http://192.168.110.112:8000/api/"
 
     private val client: OkHttpClient by lazy {
         // Logging Interceptor sangat penting agar error API muncul di Logcat

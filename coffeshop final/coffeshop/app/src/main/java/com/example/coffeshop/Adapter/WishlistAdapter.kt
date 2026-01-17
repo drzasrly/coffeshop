@@ -42,7 +42,7 @@ class WishlistAdapter(
         holder.binding.priceTxt.text = "$${item.price}"
 
         Glide.with(holder.itemView.context)
-            .load(item.picUrl[0])
+            .load(item.picUrl)
             .apply(RequestOptions().transform(CenterCrop()))
             .into(holder.binding.picItem)
 

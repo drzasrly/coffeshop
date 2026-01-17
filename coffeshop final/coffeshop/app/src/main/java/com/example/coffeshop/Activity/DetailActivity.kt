@@ -18,11 +18,7 @@ import com.example.coffeshop.viewModel.CartViewModel
 class DetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityDetailBinding
     private lateinit var item: ItemsModel
-
-    // Peringatan: Pastikan Anda ingin menggunakan ManagmentCart DAN ViewModel bersamaan.
-    // Disarankan pilih salah satu (ViewModel + Room lebih baik).
     private lateinit var managmentCart: ManagmentCart
-
     private lateinit var viewModelWishlist: WishlistViewModel
     private lateinit var viewModelCart: CartViewModel
 
@@ -37,7 +33,6 @@ class DetailActivity : AppCompatActivity() {
 
         managmentCart = ManagmentCart(this)
 
-        // Inisialisasi ViewModels yang lebih simpel
         viewModelWishlist = ViewModelProvider(this)[WishlistViewModel::class.java]
         viewModelCart = ViewModelProvider(this)[CartViewModel::class.java]
 
@@ -62,12 +57,13 @@ class DetailActivity : AppCompatActivity() {
             // Set Data ke UI
             titleTxt.text = item.title
             descTxt.text = item.description
-            priceTxt.text = "Rp ${item.price}" // Gunakan spasi agar rapi
+            priceTxt.text = "Rp ${item.price}"
             ratingTxt.text = item.rating.toString()
             numberInCartTxt.text = numberOrder.toString()
 
+            // PERBAIKAN 1: Hapus [0] karena picUrl sekarang adalah String
             Glide.with(this@DetailActivity)
-                .load(item.picUrl[0])
+                .load(item.picUrl)
                 .into(picMain)
 
             updateFavoriteButton()
@@ -85,14 +81,14 @@ class DetailActivity : AppCompatActivity() {
                 }
             }
 
-            // LOGIKA ADD TO CART (Simpan ke Database via ViewModel)
+            // LOGIKA ADD TO CART
             addToCartBtn.setOnClickListener {
-                // Pastikan fungsi addToCart di ViewModel benar-benar melakukan INSERT ke Room
+                // PERBAIKAN 2: Hapus [0] pada imageUrl
                 viewModelCart.addToCart(
                     menuId = item.id.toString(),
                     name = item.title,
                     price = item.price.toString(),
-                    imageUrl = item.picUrl[0],
+                    imageUrl = item.picUrl,
                     qty = numberOrder,
                     size = selectedSize
                 )
@@ -115,11 +111,12 @@ class DetailActivity : AppCompatActivity() {
                     Toast.makeText(this@DetailActivity, "Removed from Wishlist", Toast.LENGTH_SHORT).show()
                 } else {
                     managmentCart.addToWishlist(item)
+                    // PERBAIKAN 3: Hapus [0] pada imageUrl
                     viewModelWishlist.addProductToWishlist(
                         menuId = currentMenuId,
                         name = item.title,
                         price = item.price.toString(),
-                        imageUrl = item.picUrl[0]
+                        imageUrl = item.picUrl
                     )
                     Toast.makeText(this@DetailActivity, "Added to Wishlist", Toast.LENGTH_SHORT).show()
                 }
@@ -147,7 +144,6 @@ class DetailActivity : AppCompatActivity() {
 
     private fun updateSizeUI(size: String) {
         binding.apply {
-            // Reset semua tombol ke warna cokelat
             val darkBrown = ContextCompat.getColor(this@DetailActivity, R.color.darkBrown)
             val white = ContextCompat.getColor(this@DetailActivity, R.color.white)
 
@@ -155,7 +151,6 @@ class DetailActivity : AppCompatActivity() {
             mediumBtn.setTextColor(darkBrown)
             LargeBtn.setTextColor(darkBrown)
 
-            // Set tombol terpilih jadi putih
             when (size) {
                 "Small" -> smallBtn.setTextColor(white)
                 "Medium" -> mediumBtn.setTextColor(white)
