@@ -11,5 +11,32 @@
     <string name="enter_your_discount_code">Enter Your Discount Code</string>
     <string name="apply">Apply</string>
     <string name="cart">Cart</string>
-    <string name="tombol_kembali_desc" />
+    <string name="tombol_kembali_desc">Kembali</string>
+    <string name="privacy_policy_title">Privacy Policy</string>
+
+    <string name="privacy_policy_content">
+        <![CDATA[
+        <b>Terakhir Diperbarui: 17 Januari 2026</b><br><br>
+        Selamat datang di Coffee Shop App. Kami sangat menghargai privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, dan melindungi informasi Anda.<br><br>
+
+        <b>1. Informasi yang Kami Kumpulkan</b><br>
+        Kami mengumpulkan informasi yang Anda berikan langsung kepada kami saat mendaftar, seperti nama, alamat email, dan kata sandi yang dienkripsi.<br><br>
+
+        <b>2. Penggunaan Informasi</b><br>
+        Informasi Anda digunakan untuk:<br>
+        • Mengelola akun Anda.<br>
+        • Memproses pesanan kopi Anda.<br>
+        • Memberikan layanan dukungan pelanggan.<br>
+        • Mengamankan akses aplikasi melalui token autentikasi.<br><br>
+
+        <b>3. Keamanan Data</b><br>
+        Kami menggunakan enkripsi standar industri untuk melindungi data Anda. Token akses Anda disimpan secara aman di perangkat Anda dan digunakan untuk memverifikasi identitas Anda.<br><br>
+
+        <b>4. Hak Pengguna</b><br>
+        Anda memiliki hak untuk memperbarui informasi profil Anda atau mengubah kata sandi kapan saja melalui menu Pengaturan Akun.<br><br>
+
+        <b>5. Hubungi Kami</b><br>
+        Jika Anda memiliki pertanyaan tentang kebijakan privasi ini, silakan hubungi tim dukungan kami melalui email di support@coffeeshop.com.
+        ]]>
+    </string>
 </resources>

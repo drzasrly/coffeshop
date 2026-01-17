@@ -1,12 +1,14 @@
-data class LoginResponse(
-    val success: Boolean,
-    val access_token: String,
-    val expires_in: Int, // Wajib untuk logika kadaluarsa
-    val user: UserData?
-)
+package com.example.coffeshop.Domain
 
-data class UserData(
-    val id: Int,
-    val name: String,
-    val email: String
+import com.google.gson.annotations.SerializedName
+
+data class LoginResponse(
+    @SerializedName("success")
+    val success: Boolean,
+
+    @SerializedName("access_token") // Nama dari Laravel
+    val accessToken: String?,       // Nama di Kotlin
+
+    @SerializedName("user")
+    val user: UserData?
 )

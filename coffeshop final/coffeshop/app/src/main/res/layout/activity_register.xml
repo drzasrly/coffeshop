@@ -1,22 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/lightGrey">
+
+    <TextView
+        android:id="@+id/titleRegister"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create New Account"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/darkBrown"
+        android:layout_marginTop="64dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <EditText
+        android:id="@+id/etName"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="32dp"
+        android:hint="Full Name"
+        android:background="@drawable/cream_bg"
+        android:paddingStart="16dp"
+        app:layout_constraintTop_toBottomOf="@id/titleRegister" />
 
     <EditText
         android:id="@+id/etEmail"
         android:layout_width="match_parent"
         android:layout_height="50dp"
         android:layout_marginHorizontal="32dp"
-        android:layout_marginTop="100dp"
-        android:hint="Email"
+        android:layout_marginTop="16dp"
+        android:hint="Email Address"
         android:inputType="textEmailAddress"
         android:background="@drawable/cream_bg"
         android:paddingStart="16dp"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/etName" />
 
     <EditText
         android:id="@+id/etPassword"
@@ -31,29 +54,26 @@
         app:layout_constraintTop_toBottomOf="@id/etEmail" />
 
     <androidx.appcompat.widget.AppCompatButton
-        android:id="@+id/btnLogin"
+        android:id="@+id/btnRegister"
         android:layout_width="match_parent"
         android:layout_height="55dp"
         android:layout_marginHorizontal="32dp"
         android:layout_marginTop="32dp"
         android:background="@drawable/brown_full_corner_bg"
-        android:text="Login"
+        android:text="Sign Up"
         android:textColor="@color/white"
         android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@id/etPassword" />
 
     <TextView
-        android:id="@+id/btnSignup"
+        android:id="@+id/tvLoginLink"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="Don't have an account? Sign Up"
+        android:text="Already have an account? Login here"
         android:textColor="@color/darkBrown"
-        android:textStyle="bold"
-        android:clickable="true"
-        android:focusable="true"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnRegister"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnLogin" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

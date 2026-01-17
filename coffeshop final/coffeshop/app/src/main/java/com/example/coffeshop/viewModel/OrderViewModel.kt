@@ -14,7 +14,8 @@ import kotlinx.coroutines.withContext
 
 class OrderViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val apiService = RetrofitClient.apiService
+    // PERBAIKAN: Ganti .apiService menjadi .instance
+    private val apiService = RetrofitClient.instance
 
     fun checkout(
         items: List<OrderItemRequest>,
@@ -40,6 +41,7 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                     items = items
                 )
 
+                // Memanggil API via instance Retrofit yang benar
                 val response = apiService.createOrder(
                     "Bearer $token",
                     request
@@ -53,7 +55,6 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 } else {
                     val errorMsg = response.errorBody()?.string() ?: "Checkout gagal"
-
                     Log.e("ORDER_DEBUG", errorMsg)
 
                     withContext(Dispatchers.Main) {

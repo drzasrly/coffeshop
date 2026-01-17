@@ -70,6 +70,15 @@
         <activity
             android:name=".Activity.ChangePasswordActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".Activity.PrivacyPolicyActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".Activity.RegisterActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

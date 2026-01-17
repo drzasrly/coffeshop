@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 
 class CartViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val apiService = RetrofitClient.apiService
+    // UPDATE: Gunakan .instance sesuai file RetrofitClient kamu
+    private val apiService = RetrofitClient.instance
     private val cartDao = AppDatabase.getDatabase(application).cartDao()
 
     // Ambil data dari database Room
@@ -30,7 +31,6 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
         size: String
     ) {
         viewModelScope.launch(Dispatchers.IO) {
-            // 1️⃣ LANGSUNG SIMPAN KE LOKAL (Agar UI tidak kosong)
             val dataToSave = CartModel(
                 menu_id = menuId,
                 name = name,
@@ -41,12 +41,13 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             try {
-                // Simpan ke Room
+                // 1. Simpan ke Room
                 cartDao.addCart(dataToSave)
                 Log.d("CART_DEBUG", "LOKAL: Berhasil simpan ke Room")
 
-                // 2️⃣ BARU SINKRON KE SERVER
+                // 2. Sinkron ke SERVER
                 val token = TokenManager.instance.getToken()
+                // Gunakan .execute() di Dispatchers.IO sudah benar untuk fungsi Call<>
                 val response = apiService.addCart(
                     "Bearer $token",
                     CartRequest(menuId, qty, size)
@@ -55,10 +56,9 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
                 if (response.isSuccessful) {
                     Log.d("CART_DEBUG", "SERVER: Berhasil sinkron ke API")
                 } else {
-                    Log.e("CART_DEBUG", "SERVER GAGAL: ${response.code()} - ${response.message()}")
+                    Log.e("CART_DEBUG", "SERVER GAGAL: ${response.code()}")
                 }
             } catch (e: Exception) {
-                // Jika internet mati, data tetap ada di lokal (Room)
                 Log.e("CART_DEBUG", "NETWORK ERROR: ${e.message}")
             }
         }
@@ -67,10 +67,11 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
     fun removeFromCart(menuId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Hapus lokal dulu agar user merasa cepat
+                // Hapus lokal dulu agar user merasa cepat (Offline First)
                 cartDao.deleteByMenuId(menuId)
 
                 val token = TokenManager.instance.getToken()
+                // Gunakan .instance
                 val response = apiService.removeFromCart("Bearer $token", menuId).execute()
 
                 if (!response.isSuccessful) {
@@ -90,6 +91,7 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
 
                 // 2. Update server
                 val token = TokenManager.instance.getToken()
+                // Gunakan .instance
                 val response = apiService.updateCartQuantity(
                     "Bearer $token",
                     menuId,
@@ -104,12 +106,12 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
     fun clearSelectedItems(items: List<CartModel>) {
         viewModelScope.launch(Dispatchers.IO) {
             val ids = items.map { it.menu_id }
-            // Panggil fungsi delete dari DAO/Repository Anda
-            // Contoh: repository.deleteCheckoutedItems(ids)
             cartDao.deleteCheckoutedItems(ids)
+            Log.d("CART_DEBUG", "LOKAL: Checkouted items cleared")
         }
     }
 }

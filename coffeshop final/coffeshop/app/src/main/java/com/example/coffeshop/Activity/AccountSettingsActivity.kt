@@ -13,21 +13,23 @@ class AccountSettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Inisialisasi View Binding
         binding = ActivityAccountSettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Semua listener tombol harus berada di DALAM kurung kurawal onCreate
-
-        // 2. Tombol Back
+        // 1. Tombol Back
         binding.backBtn.setOnClickListener {
             finish()
         }
 
-        // 3. Klik Change Password
-        // Di dalam onCreate AccountSettingsActivity
+        // 2. Klik Change Password
         binding.btnChangePassword.setOnClickListener {
             val intent = Intent(this, ChangePasswordActivity::class.java)
+            startActivity(intent)
+        }
+
+        // 3. Klik Privacy Policy - SEKARANG BERFUNGSI
+        binding.btnPrivacyPolicy.setOnClickListener {
+            val intent = Intent(this, PrivacyPolicyActivity::class.java)
             startActivity(intent)
         }
 
@@ -35,10 +37,5 @@ class AccountSettingsActivity : AppCompatActivity() {
         binding.btnDeleteAccount.setOnClickListener {
             Toast.makeText(this, "Please contact support to delete account", Toast.LENGTH_SHORT).show()
         }
-
-        // 5. Klik Privacy Policy (Opsional)
-        binding.btnPrivacyPolicy.setOnClickListener {
-            Toast.makeText(this, "Privacy Policy clicked", Toast.LENGTH_SHORT).show()
-        }
-    } // Kurung kurawal penutup onCreate
-} // Kurung kurawal penutup Class
+    }
+}
