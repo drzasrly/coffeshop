@@ -9,6 +9,8 @@ import com.bumptech.glide.Glide
 import com.example.coffeshop.Domain.OrderModel
 import com.example.coffeshop.R
 import com.example.coffeshop.databinding.ViewholderOrderItemBinding
+import java.text.NumberFormat
+import java.util.Locale
 
 class OrderAdapter(private val orders: List<OrderModel>) :
     RecyclerView.Adapter<OrderAdapter.ViewHolder>() {
@@ -27,39 +29,45 @@ class OrderAdapter(private val orders: List<OrderModel>) :
         val context = holder.itemView.context
 
         with(holder.binding) {
+            // Set Tanggal & Status
             dateTxt.text = order.date
-
-            // Tampilan Status Aktif
             statusTxt.text = order.status
-            statusTxt.background = null
 
-            // Logika Warna Status
+            // Warna Status berdasarkan gambar image_62d9bb.png
             when (order.status) {
                 "Selesai" -> statusTxt.setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
-                "Proses", "Diproses Admin" -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.orange))
-                else -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.darkBrown))
+                "Proses" -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.orange))
+                else -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.orange))
             }
 
-            // Menampilkan Harga dari Database (Bukan Rp 0)
-            totalPriceTxt.text = "Rp ${String.format("%,.0f", order.totalPrice)}"
+            // Set Total Harga agar tidak Rp 0
+            totalPriceTxt.text = formatRupiah(order.totalPrice)
 
+            // Mengisi Judul, Jumlah, dan Gambar jika item tersedia
             if (!order.items.isNullOrEmpty()) {
-                // PERBAIKAN: Menampilkan semua nama produk yang dibeli
-                // Contoh: "Cappuccino, Espresso"
-                val allProductNames = order.items.joinToString(", ") { it.title }
-                titleTxt.text = allProductNames
+                titleTxt.text = order.items.joinToString(", ") { it.title }
+                qtyInfoTxt.text = "${order.items.sumOf { it.quantity }} Item"
 
-                // Menghitung total cup
-                val totalQty = order.items.sumOf { it.quantity }
-                qtyInfoTxt.text = "$totalQty Item"
-
-                // Menggunakan gambar produk pertama sebagai ikon
-                Glide.with(context).load(order.items[0].picUrl).into(picOrder)
+                // Memunculkan Gambar menggunakan Glide (Sesuai picUrl di Firebase)
+                Glide.with(context)
+                    .load(order.items[0].picUrl)
+                    .placeholder(R.drawable.btn_3) // Menggunakan aset btn_3 dari drawable kamu
+                    .into(picOrder)
+            } else {
+                titleTxt.text = "Detail Pesanan Kosong"
+                qtyInfoTxt.text = "0 Item"
             }
 
+            // Tombol pesanan diterima (hidden by default)
             finishBtn.visibility = View.GONE
         }
     }
 
     override fun getItemCount(): Int = orders.size
+
+    private fun formatRupiah(number: Double): String {
+        val localeID = Locale("in", "ID")
+        val formatRupiah = NumberFormat.getCurrencyInstance(localeID)
+        return formatRupiah.format(number).replace("Rp", "Rp ")
+    }
 }

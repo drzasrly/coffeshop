@@ -11,32 +11,30 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginVertical="8dp"
         android:background="@drawable/white_semi_coner_bg"
-        android:padding="12dp"
-        tools:ignore="MissingConstraints">
+        android:padding="12dp">
 
         <TextView
             android:id="@+id/dateTxt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="16 Jan 2026"
             android:textColor="@color/darkBrown"
             android:textSize="12sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="17 Jan 2026" />
 
         <TextView
             android:id="@+id/statusTxt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/brown_storke_bg"
             android:paddingHorizontal="8dp"
             android:paddingVertical="2dp"
-            android:text="Dikirim"
             android:textColor="@color/orange"
             android:textSize="11sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"/>
+<!--        tools:text="Proses" />-->
 
         <View
             android:id="@+id/divider"
@@ -54,8 +52,7 @@
             android:scaleType="centerCrop"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider"
-            app:shapeAppearanceOverlay="@style/circleCornerImageView"
-            tools:srcCompat="@tools:sample/backgrounds/scenic" />
+            app:shapeAppearanceOverlay="@style/circleCornerImageView" />
 
         <TextView
             android:id="@+id/titleTxt"
@@ -63,37 +60,37 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="8dp"
-            android:text="Latte &amp; 2 Produk lainnya"
             android:textColor="@color/darkBrown"
             android:textSize="14sp"
             android:textStyle="bold"
+            android:text=""
             app:layout_constraintEnd_toStartOf="@+id/totalPriceTxt"
             app:layout_constraintStart_toEndOf="@+id/picOrder"
-            app:layout_constraintTop_toTopOf="@+id/picOrder" />
+            app:layout_constraintTop_toTopOf="@+id/picOrder"
+            tools:text="Nama Produk" />
 
         <TextView
             android:id="@+id/qtyInfoTxt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="3 Item"
             android:textColor="@color/darkBrown"
             android:textSize="12sp"
             android:alpha="0.6"
             app:layout_constraintStart_toStartOf="@+id/titleTxt"
-            app:layout_constraintTop_toBottomOf="@+id/titleTxt" />
+            app:layout_constraintTop_toBottomOf="@+id/titleTxt"
+            tools:text="1 Item" />
 
         <TextView
             android:id="@+id/totalPriceTxt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Rp 120.000"
             android:textColor="@color/orange"
             android:textSize="14sp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="@+id/qtyInfoTxt"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/titleTxt" />
-
+            app:layout_constraintTop_toTopOf="@+id/titleTxt"
+            tools:text="Rp 15.000" />
 
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/finishBtn"
@@ -109,7 +106,6 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/qtyInfoTxt" />
-
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

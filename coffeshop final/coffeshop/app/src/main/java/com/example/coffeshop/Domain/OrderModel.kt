@@ -8,7 +8,7 @@ data class OrderModel(
     var status: String = "",
     var totalPrice: Double = 0.0,
     var address: String = "",
-    var timestamp: Long = 0L, // Untuk melacak waktu pesanan
+    var timestamp: Long = 0L, // Pastikan urutan ini benar
     var items: ArrayList<OrderItemModel> = ArrayList()
 ) : Serializable
 
@@ -16,6 +16,6 @@ data class OrderItemModel(
     var title: String = "",
     var price: Double = 0.0,
     var quantity: Int = 0,
-    var picUrl: String? = "", // Sesuai dengan key di Firebase
+    var picUrl: String? = "",
     var size: String = ""
 ) : Serializable

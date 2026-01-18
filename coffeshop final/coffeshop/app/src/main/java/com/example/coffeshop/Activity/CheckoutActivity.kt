@@ -3,15 +3,11 @@ package com.example.coffeshop.Activity
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.coffeshop.Adapter.CheckoutAdapter
-import com.example.coffeshop.Domain.CartModel
-import com.example.coffeshop.Domain.OrderItemModel
-import com.example.coffeshop.Domain.OrderModel
-import com.example.coffeshop.Domain.OrderItemRequest
+import com.example.coffeshop.Domain.*
 import com.example.coffeshop.databinding.ActivityCheckoutBinding
 import com.example.coffeshop.viewModel.CartViewModel
 import com.example.coffeshop.viewModel.OrderViewModel
@@ -26,28 +22,28 @@ class CheckoutActivity : AppCompatActivity() {
     private lateinit var orderViewModel: OrderViewModel
     private lateinit var cartViewModel: CartViewModel
     private var cartItems: ArrayList<CartModel> = arrayListOf()
-
-    // Variabel pengunci untuk mencegah klik ganda (Anti-Duplikasi)
     private var isProcessing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         binding = ActivityCheckoutBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Inisialisasi ViewModel untuk logika keranjang dan pesanan
         orderViewModel = ViewModelProvider(this)[OrderViewModel::class.java]
         cartViewModel = ViewModelProvider(this)[CartViewModel::class.java]
 
         setupData()
         setupRecyclerView()
 
+        // Tombol kembali sesuai dengan ID di XML Anda
         binding.backBtn.setOnClickListener { finish() }
 
+        // Listener tombol pembayaran
         binding.payBtn.setOnClickListener {
             if (!isProcessing) {
                 val total = intent.getDoubleExtra("total", 0.0)
-                checkout(total)
+                processCheckout(total)
             }
         }
     }
@@ -58,6 +54,7 @@ class CheckoutActivity : AppCompatActivity() {
         val tax = intent.getDoubleExtra("tax", 0.0)
         val delivery = intent.getDoubleExtra("delivery", 0.0)
 
+        // Mengambil daftar item dari intent keranjang
         val items = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableArrayListExtra("cartItems", CartModel::class.java)
         } else {
@@ -66,102 +63,97 @@ class CheckoutActivity : AppCompatActivity() {
         }
 
         items?.let { cartItems = it }
-        setSummary(subtotal, tax, delivery, total)
+
+        binding.apply {
+            totalTxt.text = formatRupiah(total)
+            subtotalTxt.text = formatRupiah(subtotal)
+            taxTxt.text = formatRupiah(tax)
+            deliveryTxt.text = formatRupiah(delivery)
+        }
     }
 
     private fun setupRecyclerView() {
         binding.checkoutItemList.apply {
             layoutManager = LinearLayoutManager(this@CheckoutActivity)
             adapter = CheckoutAdapter(cartItems)
-            isNestedScrollingEnabled = false
         }
     }
 
-    private fun checkout(totalPrice: Double) {
+    private fun processCheckout(totalPrice: Double) {
         val address = binding.addressEdt.text.toString().trim()
         if (address.isEmpty()) {
             Toast.makeText(this, "Alamat wajib diisi", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Aktifkan pengunci dan ubah UI
         isProcessing = true
         binding.payBtn.isEnabled = false
-        binding.payBtn.text = "Memproses..."
+        binding.payBtn.text = "Sedang Memproses..."
 
+        // Menyiapkan data item untuk dikirim ke MySQL (Laravel API)
         val itemsForApi = cartItems.map {
             val cleanPrice = it.price.replace(Regex("[^\\d]"), "").toDoubleOrNull() ?: 0.0
             OrderItemRequest(it.menu_id, it.quantity, cleanPrice, it.size)
         }
 
+        // 1. Simpan ke MySQL via API Laravel untuk mendapatkan ID resmi
         orderViewModel.checkout(itemsForApi, totalPrice, address,
-            onSuccess = {
-                // Kirim ke Firebase hanya jika API Laravel Berhasil
-                pushOrderToFirebase(totalPrice, address)
+            onSuccess = { orderId ->
+                // 2. Gunakan ID MySQL (misal: 118) sebagai kunci Firebase
+                pushOrderToFirebase(totalPrice, address, orderId.toString())
             },
             onError = { error ->
-                runOnUiThread {
-                    // Buka kunci jika gagal agar user bisa mencoba lagi
-                    isProcessing = false
-                    binding.payBtn.isEnabled = true
-                    binding.payBtn.text = "Proses Pembayaran"
-                    Toast.makeText(this, "Gagal API: $error", Toast.LENGTH_SHORT).show()
-                }
+                isProcessing = false
+                binding.payBtn.isEnabled = true
+                binding.payBtn.text = "Proses Pembayaran"
+                // Mengatasi pesan error jika struktur data server tidak sesuai
+                Toast.makeText(this, "Gagal: $error", Toast.LENGTH_SHORT).show()
             }
         )
     }
 
-    private fun pushOrderToFirebase(totalPrice: Double, address: String) {
+    private fun pushOrderToFirebase(totalPrice: Double, address: String, orderId: String) {
         val dbRef = FirebaseDatabase.getInstance().getReference("Orders")
-        val orderId = dbRef.push().key ?: return
 
+        // Konversi item keranjang ke model pesanan Firebase agar detail produk muncul
         val itemsList = ArrayList<OrderItemModel>()
         cartItems.forEach {
             val cleanPrice = it.price.replace(Regex("[^\\d]"), "").toDoubleOrNull() ?: 0.0
-            itemsList.add(
-                OrderItemModel(
-                    title = it.name,
-                    price = cleanPrice,
-                    quantity = it.quantity,
-                    picUrl = it.imageUrl,
-                    size = it.size
-                )
-            )
+            itemsList.add(OrderItemModel(
+                title = it.name,
+                price = cleanPrice,
+                quantity = it.quantity,
+                picUrl = it.imageUrl, // Pastikan picUrl tersimpan agar gambar muncul di riwayat
+                size = it.size
+            ))
         }
 
         val currentDate = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date())
+        val currentTimestamp = System.currentTimeMillis()
 
+        // Membuat objek OrderModel lengkap dengan ID MySQL dan daftar produk
         val newOrder = OrderModel(
             orderId = orderId,
             date = currentDate,
             status = "Proses",
-            totalPrice = totalPrice,
+            totalPrice = totalPrice, // Memastikan harga tidak Rp 0
             address = address,
-            items = itemsList
+            timestamp = currentTimestamp,
+            items = itemsList // Pastikan daftar produk terkirim agar tidak "Detail Pesanan Kosong"
         )
 
+        // Simpan ke Firebase Realtime Database
         dbRef.child(orderId).setValue(newOrder).addOnSuccessListener {
+            // Hapus keranjang hanya jika semua proses sukses
             cartViewModel.clearSelectedItems(cartItems)
             runOnUiThread {
-                Toast.makeText(this, "Pesanan Berhasil Dicatat!", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Pesanan Berhasil Dicatat!", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }.addOnFailureListener { e ->
-            runOnUiThread {
-                isProcessing = false
-                binding.payBtn.isEnabled = true
-                binding.payBtn.text = "Proses Pembayaran"
-                Toast.makeText(this, "Gagal Firebase: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun setSummary(subtotal: Double, tax: Double, delivery: Double, total: Double) {
-        binding.apply {
-            subtotalTxt.text = formatRupiah(subtotal)
-            taxTxt.text = formatRupiah(tax)
-            deliveryTxt.text = formatRupiah(delivery)
-            totalTxt.text = formatRupiah(total)
+            isProcessing = false
+            binding.payBtn.isEnabled = true
+            Toast.makeText(this, "Firebase Gagal: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

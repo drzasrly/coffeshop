@@ -1,5 +1,6 @@
 package com.example.coffeshop.Repository
 
+import OrderListResponse
 import retrofit2.Response
 import com.example.coffeshop.Domain.*
 import okhttp3.ResponseBody
@@ -78,8 +79,12 @@ interface ApiService {
     suspend fun createOrder(
         @Header("Authorization") token: String,
         @Body request: OrderRequest
-    ): Response<Any>
+    ): Response<OrderResponse>
 
     @GET("orders")
-    fun getOrders(@Header("Authorization") token: String): Call<ResponseBody>
+    suspend fun getOrders(
+        @Header("Authorization") token: String
+    ): Response<OrderListResponse>
+
 }
+

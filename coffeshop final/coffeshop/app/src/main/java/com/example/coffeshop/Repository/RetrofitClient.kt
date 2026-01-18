@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     // Sesuaikan IP ini dengan IP laptop kamu (Cek via ipconfig di CMD)
-    private const val BASE_URL = "http://192.168.110.112:8000/api/"
+    private const val BASE_URL = "http://192.168.2.101:8000/api/"
 
     private val client: OkHttpClient by lazy {
         val logging = HttpLoggingInterceptor().apply {

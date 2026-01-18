@@ -1,65 +1,64 @@
 package com.example.coffeshop.Activity
 
 import android.os.Bundle
-import android.view.View
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.coffeshop.Adapter.OrderAdapter
-import com.example.coffeshop.Domain.OrderModel
 import com.example.coffeshop.databinding.ActivityOrderBinding
-import com.google.firebase.database.*
+import com.example.coffeshop.viewModel.OrderViewModel
 
+/**
+ * Activity untuk menampilkan daftar riwayat pesanan pengguna.
+ * Mengambil data secara real-time dari Firebase agar status dari Admin Filament tersinkronisasi.
+ */
 class OrderActivity : AppCompatActivity() {
+
     private lateinit var binding: ActivityOrderBinding
-    private val orderList = mutableListOf<OrderModel>()
+    private lateinit var orderViewModel: OrderViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Inisialisasi View Binding sesuai dengan activity_order.xml
         binding = ActivityOrderBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.backBtn.setOnClickListener { finish() }
+        // Inisialisasi ViewModel untuk mengelola data pesanan
+        orderViewModel = ViewModelProvider(this)[OrderViewModel::class.java]
 
         setupRecyclerView()
-        loadOrdersFromFirebase()
+        observeOrders()
+
+        // Handler untuk tombol kembali menggunakan ID backBtn dari XML Anda
+        binding.backBtn.setOnClickListener {
+            finish()
+        }
     }
 
+    /**
+     * Mengatur konfigurasi RecyclerView untuk menampilkan daftar pesanan.
+     */
     private fun setupRecyclerView() {
+        // Menggunakan ID orderRecyclerView sesuai dengan file XML Anda
         binding.orderRecyclerView.layoutManager = LinearLayoutManager(this)
     }
 
-    private fun loadOrdersFromFirebase() {
-        val dbRef = FirebaseDatabase.getInstance().getReference("Orders")
+    /**
+     * Mengamati perubahan data pesanan dari Firebase melalui ViewModel.
+     */
+    private fun observeOrders() {
+        // Memicu fungsi pengambilan data dari Firebase Realtime Database
+        orderViewModel.fetchOrdersFromFirebase()
 
-        dbRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                orderList.clear()
-                if (snapshot.exists()) {
-                    for (orderSnapshot in snapshot.children) {
-                        try {
-                            val order = orderSnapshot.getValue(OrderModel::class.java)
-                            order?.let {
-                                it.orderId = orderSnapshot.key ?: ""
-                                orderList.add(it)
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("OrderActivity", "Error parsing: ${e.message}")
-                        }
-                    }
-
-                    // MEMBALIK LIST: Pesanan terbaru muncul paling atas
-                    orderList.reverse()
-
-                    binding.orderRecyclerView.adapter = OrderAdapter(orderList)
-                } else {
-                    Toast.makeText(this@OrderActivity, "Belum ada pesanan", Toast.LENGTH_SHORT).show()
-                }
+        // Mendengarkan perubahan pada LiveData firebaseOrders
+        orderViewModel.firebaseOrders.observe(this) { orders ->
+            if (orders != null) {
+                // Menghubungkan adapter dengan data pesanan terbaru
+                // Menggunakan OrderAdapter yang telah disesuaikan sebelumnya
+                val adapter = OrderAdapter(orders)
+                binding.orderRecyclerView.adapter = adapter
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                Toast.makeText(this@OrderActivity, "Database Error: ${error.message}", Toast.LENGTH_SHORT).show()
-            }
-        })
+        }
     }
 }
