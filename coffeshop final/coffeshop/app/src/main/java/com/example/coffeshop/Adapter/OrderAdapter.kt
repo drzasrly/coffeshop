@@ -1,11 +1,13 @@
 package com.example.coffeshop.Adapter
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.example.coffeshop.Activity.OrderDetailActivity
 import com.example.coffeshop.Domain.OrderModel
 import com.example.coffeshop.R
 import com.example.coffeshop.databinding.ViewholderOrderItemBinding
@@ -33,7 +35,7 @@ class OrderAdapter(private val orders: List<OrderModel>) :
             dateTxt.text = order.date
             statusTxt.text = order.status
 
-            // Warna Status berdasarkan gambar image_62d9bb.png
+            // Warna Status berdasarkan logika status terbaru
             when (order.status) {
                 "Selesai" -> statusTxt.setTextColor(ContextCompat.getColor(context, android.R.color.darker_gray))
                 "Proses" -> statusTxt.setTextColor(ContextCompat.getColor(context, R.color.orange))
@@ -48,18 +50,26 @@ class OrderAdapter(private val orders: List<OrderModel>) :
                 titleTxt.text = order.items.joinToString(", ") { it.title }
                 qtyInfoTxt.text = "${order.items.sumOf { it.quantity }} Item"
 
-                // Memunculkan Gambar menggunakan Glide (Sesuai picUrl di Firebase)
+                // Memunculkan Gambar menggunakan Glide
                 Glide.with(context)
                     .load(order.items[0].picUrl)
-                    .placeholder(R.drawable.btn_3) // Menggunakan aset btn_3 dari drawable kamu
+                    .placeholder(R.drawable.btn_3)
                     .into(picOrder)
             } else {
                 titleTxt.text = "Detail Pesanan Kosong"
                 qtyInfoTxt.text = "0 Item"
             }
 
-            // Tombol pesanan diterima (hidden by default)
+            // Sembunyikan tombol pesanan diterima (default)
             finishBtn.visibility = View.GONE
+
+            // FITUR BARU: Klik untuk buka detail pesanan
+            root.setOnClickListener {
+                val intent = Intent(context, OrderDetailActivity::class.java)
+                // Mengirim objek order_data yang berisi info lengkap (Items, Harga, Alamat)
+                intent.putExtra("order_data", order)
+                context.startActivity(intent)
+            }
         }
     }
 

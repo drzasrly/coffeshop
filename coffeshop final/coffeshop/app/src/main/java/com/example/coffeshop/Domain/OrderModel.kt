@@ -1,7 +1,10 @@
 package com.example.coffeshop.Domain
 
+import android.os.Parcelable
 import java.io.Serializable
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 data class OrderModel(
     var orderId: String = "",
     var date: String = "",
@@ -10,7 +13,7 @@ data class OrderModel(
     var address: String = "",
     var timestamp: Long = 0L, // Pastikan urutan ini benar
     var items: ArrayList<OrderItemModel> = ArrayList()
-) : Serializable
+) :Parcelable
 
 data class OrderItemModel(
     var title: String = "",
