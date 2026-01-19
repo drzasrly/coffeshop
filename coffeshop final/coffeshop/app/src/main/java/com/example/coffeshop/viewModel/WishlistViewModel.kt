@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 
 class WishlistViewModel(application: Application) : AndroidViewModel(application) {
 
-    // PERBAIKAN: Ganti .apiService menjadi .instance
     private val apiService = RetrofitClient.instance
     private val wishlistDao = AppDatabase.getDatabase(application).wishlistDao()
 
@@ -24,9 +23,9 @@ class WishlistViewModel(application: Application) : AndroidViewModel(application
     fun addProductToWishlist(menuId: String, name: String, price: String, imageUrl: String?) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = TokenManager.instance.getToken()
-                // Menggunakan .instance
-                val response = apiService.addWishlist("Bearer $token", WishlistRequest(menuId)).execute()
+                // PERBAIKAN: Hapus parameter "Bearer $token"
+                // Hanya kirim objek WishlistRequest(menuId)
+                val response = apiService.addWishlist(WishlistRequest(menuId)).execute()
 
                 if (response.isSuccessful) {
                     val dataToSave = WishlistModel(
@@ -38,7 +37,7 @@ class WishlistViewModel(application: Application) : AndroidViewModel(application
                         imageUrl = imageUrl
                     )
                     wishlistDao.addWishlist(dataToSave)
-                    Log.d("API_DEBUG", "SUKSES: Data masuk Laravel & Lokal untuk MenuID: $menuId")
+                    Log.d("API_DEBUG", "SUKSES: Masuk Laravel & Lokal untuk MenuID: $menuId")
                 } else {
                     Log.e("API_DEBUG", "SERVER MENOLAK: ${response.code()}")
                 }
@@ -52,17 +51,9 @@ class WishlistViewModel(application: Application) : AndroidViewModel(application
         Log.d("API_DEBUG", "Fungsi removeFromWishlist dipanggil untuk MenuID: $menuId")
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = TokenManager.instance.getToken()
-                if (token.isNullOrEmpty()) {
-                    Log.e("API_DEBUG", "Hapus gagal: Token kosong!")
-                    return@launch
-                }
-
-                val tokenHeader = "Bearer $token"
-                Log.d("API_DEBUG", "Mengirim request DELETE ke Laravel...")
-
-                // Menggunakan .instance
-                val response = apiService.removeFromWishlist(tokenHeader, menuId).execute()
+                // PERBAIKAN: Hapus parameter tokenHeader manual
+                // Sekarang hanya mengirim parameter menuId saja
+                val response = apiService.removeFromWishlist(menuId).execute()
 
                 if (response.isSuccessful) {
                     wishlistDao.deleteByMenuId(menuId)

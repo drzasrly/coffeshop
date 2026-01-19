@@ -1,4 +1,3 @@
-// File: Helper/TokenManager.kt
 package com.example.coffeshop.Helper
 
 import android.content.Context
@@ -11,11 +10,11 @@ class TokenManager private constructor(context: Context) {
     companion object {
         @Volatile private lateinit var INSTANCE: TokenManager
 
-        // Definisikan kunci di satu tempat untuk konsistensi
         private const val JWT_TOKEN_KEY = "JWT_TOKEN"
         private const val USER_NAME_KEY = "USER_NAME"
-
         private const val USER_EMAIL_KEY = "USER_EMAIL"
+        private const val LOGIN_TIME_KEY = "LOGIN_TIME"
+        private const val EXPIRES_IN_KEY = "EXPIRES_IN"
 
         fun initialize(context: Context) {
             synchronized(this) {
@@ -28,74 +27,47 @@ class TokenManager private constructor(context: Context) {
         val instance: TokenManager
             get() {
                 if (!::INSTANCE.isInitialized) {
-                    throw IllegalStateException("TokenManager must be initialized in the Application class.")
+                    throw IllegalStateException("TokenManager must be initialized.")
                 }
                 return INSTANCE
             }
     }
 
-
-// Helper/TokenManager.kt
-
+    // --- Token & Session ---
     fun saveToken(token: String, expiresIn: Int) {
-        val currentTime = System.currentTimeMillis() / 1000 // Satuan Detik
+        val currentTime = System.currentTimeMillis() / 1000
         prefs.edit().apply {
-            putString("JWT_TOKEN", token)
-            putLong("LOGIN_TIME", currentTime)
-            putInt("EXPIRES_IN", expiresIn)
+            putString(JWT_TOKEN_KEY, token)
+            putLong(LOGIN_TIME_KEY, currentTime)
+            putInt(EXPIRES_IN_KEY, expiresIn)
             apply()
         }
     }
 
-    fun isTokenExpired(): Boolean {
-        val loginTime = prefs.getLong("LOGIN_TIME", 0)
-        val expiresIn = prefs.getInt("EXPIRES_IN", 0)
-        val currentTime = System.currentTimeMillis() / 1000
+    fun getToken(): String? = prefs.getString(JWT_TOKEN_KEY, null)
 
-        // Jika waktu sekarang melebihi waktu login + durasi token
+    fun isTokenExpired(): Boolean {
+        val loginTime = prefs.getLong(LOGIN_TIME_KEY, 0)
+        val expiresIn = prefs.getInt(EXPIRES_IN_KEY, 0)
+        val currentTime = System.currentTimeMillis() / 1000
         return currentTime > (loginTime + expiresIn)
     }
 
-
-
-    // --- Fungsi Token ---
-    fun saveToken(token: String) {
-        prefs.edit().putString(JWT_TOKEN_KEY, token).apply()
-    }
-
-    fun getToken(): String? {
-        return prefs.getString(JWT_TOKEN_KEY, null)
-    }
-
-    // --- Fungsi Nama Pengguna ---
-
+    // --- User Info (Ini yang tadi bikin error) ---
     fun saveUserName(name: String) {
         prefs.edit().putString(USER_NAME_KEY, name).apply()
     }
 
-    fun getUserName(): String? {
-        return prefs.getString(USER_NAME_KEY, null)
-    }
-
-
-
+    fun getUserName(): String? = prefs.getString(USER_NAME_KEY, "User")
 
     fun saveUserEmail(email: String) {
         prefs.edit().putString(USER_EMAIL_KEY, email).apply()
     }
 
-    fun getUserEmail(): String? {
-        return prefs.getString(USER_EMAIL_KEY, null)
-    }
+    fun getUserEmail(): String? = prefs.getString(USER_EMAIL_KEY, null)
 
-
-    // --- Clear Token ---
-
+    // --- Clear Total ---
     fun clearToken() {
-        prefs.edit()
-            .remove(JWT_TOKEN_KEY)
-            .remove(USER_NAME_KEY)
-            .remove(USER_EMAIL_KEY)
-            .apply()
+        prefs.edit().clear().apply()
     }
 }

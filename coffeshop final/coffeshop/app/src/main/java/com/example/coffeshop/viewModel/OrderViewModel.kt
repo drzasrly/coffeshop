@@ -14,39 +14,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/**
- * ViewModel untuk mengelola pesanan.
- * Menghubungkan API Laravel (MySQL) dan Firebase Realtime Database.
- */
 class OrderViewModel(application: Application) : AndroidViewModel(application) {
 
     private val apiService = RetrofitClient.instance
 
-    // LiveData untuk daftar pesanan dari Firebase
     private val _firebaseOrders = MutableLiveData<List<OrderModel>>()
     val firebaseOrders: LiveData<List<OrderModel>> get() = _firebaseOrders
 
-    /**
-     * Fungsi Checkout: Mengirim data ke MySQL dan mengambil ID resmi untuk Firebase.
-     * Perbaikan: Mengambil ID dari objek 'data' sesuai struktur OrderController.php terbaru.
-     */
     fun checkout(
         items: List<OrderItemRequest>,
         totalPrice: Double,
         address: String,
-        onSuccess: (Int) -> Unit, // Callback membawa ID MySQL
+        onSuccess: (Int) -> Unit,
         onError: (String) -> Unit
     ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val token = TokenManager.instance.getToken()
-
-                if (token.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        onError("Token tidak ditemukan, silakan login ulang")
-                    }
-                    return@launch
-                }
+                // Kita tidak perlu mengambil token di sini untuk dikirim ke API
+                // karena AuthInterceptor di RetrofitClient sudah melakukannya.
 
                 val request = OrderRequest(
                     total_price = totalPrice,
@@ -54,19 +39,17 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                     items = items
                 )
 
-                // 1. Simpan ke Laravel API (MySQL)
-                val response = apiService.createOrder("Bearer $token", request)
+                // PERBAIKAN: Hapus parameter "Bearer $token"
+                // Sekarang hanya mengirim objek 'request' saja
+                val response = apiService.createOrder(request)
 
                 if (response.isSuccessful) {
-                    // PENTING: Ambil ID dari response.body()?.data?.id
                     val orderId = response.body()?.data?.id ?: 0
 
                     withContext(Dispatchers.Main) {
                         if (orderId != 0) {
-                            // Kirim ID ke Activity untuk dijadikan key di Firebase
                             onSuccess(orderId)
                         } else {
-                            // Mencegah error "ID tidak valid" yang merusak sinkronisasi
                             onError("Server sukses tapi gagal memberikan ID Pesanan")
                         }
                     }
@@ -85,10 +68,6 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Memantau status pesanan secara Real-time dari Firebase.
-     * Digunakan oleh OrderActivity untuk melihat perubahan status dari Admin Filament.
-     */
     fun fetchOrdersFromFirebase() {
         val dbRef = FirebaseDatabase.getInstance().getReference("Orders")
 
@@ -98,13 +77,11 @@ class OrderViewModel(application: Application) : AndroidViewModel(application) {
                 for (childSnapshot in snapshot.children) {
                     val item = childSnapshot.getValue(OrderModel::class.java)
                     item?.let {
-                        // Pastikan ID Firebase tersimpan di objek model
                         it.orderId = childSnapshot.key ?: ""
                         list.add(it)
                     }
                 }
 
-                // Urutkan berdasarkan timestamp terbaru
                 val sortedList = list.sortedByDescending { it.timestamp }
                 _firebaseOrders.postValue(sortedList)
             }

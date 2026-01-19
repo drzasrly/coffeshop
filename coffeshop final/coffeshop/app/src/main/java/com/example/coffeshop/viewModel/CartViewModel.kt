@@ -41,25 +41,18 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             try {
-                // 1. Simpan ke Room
                 cartDao.addCart(dataToSave)
-                Log.d("CART_DEBUG", "LOKAL: Berhasil simpan ke Room")
 
-                // 2. Sinkron ke SERVER
-                val token = TokenManager.instance.getToken()
-                // Gunakan .execute() di Dispatchers.IO sudah benar untuk fungsi Call<>
+                // PERBAIKAN: Hapus parameter "Bearer $token" karena sudah dihandle Interceptor
                 val response = apiService.addCart(
-                    "Bearer $token",
                     CartRequest(menuId, qty, size)
                 ).execute()
 
                 if (response.isSuccessful) {
-                    Log.d("CART_DEBUG", "SERVER: Berhasil sinkron ke API")
-                } else {
-                    Log.e("CART_DEBUG", "SERVER GAGAL: ${response.code()}")
+                    Log.d("CART_DEBUG", "SERVER: Berhasil sinkron")
                 }
             } catch (e: Exception) {
-                Log.e("CART_DEBUG", "NETWORK ERROR: ${e.message}")
+                Log.e("CART_DEBUG", "ERROR: ${e.message}")
             }
         }
     }
@@ -67,16 +60,12 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
     fun removeFromCart(menuId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // Hapus lokal dulu agar user merasa cepat (Offline First)
                 cartDao.deleteByMenuId(menuId)
 
-                val token = TokenManager.instance.getToken()
-                // Gunakan .instance
-                val response = apiService.removeFromCart("Bearer $token", menuId).execute()
+                // PERBAIKAN: Hapus parameter "Bearer $token"
+                val response = apiService.removeFromCart(menuId).execute()
 
-                if (!response.isSuccessful) {
-                    Log.e("CART_DEBUG", "Gagal hapus di server")
-                }
+                if (!response.isSuccessful) Log.e("CART_DEBUG", "Gagal hapus di server")
             } catch (e: Exception) {
                 Log.e("CART_DEBUG", "ERROR remove: ${e.message}")
             }
@@ -86,20 +75,19 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
     fun updateQuantity(menuId: String, localId: Int, newQty: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 1. Update lokal (Room) segera
+                // 1. Update Room
                 cartDao.updateQuantity(localId, newQty)
 
                 // 2. Update server
-                val token = TokenManager.instance.getToken()
-                // Gunakan .instance
+                // PERBAIKAN: Hapus parameter "Bearer $token"
+                // Pastikan CartRequest mengirim data yang dibutuhkan backend (biasanya size dikosongkan jika tidak update size)
                 val response = apiService.updateCartQuantity(
-                    "Bearer $token",
                     menuId,
                     CartRequest(menuId, newQty, "")
                 ).execute()
 
                 if (response.isSuccessful) {
-                    Log.d("CART_DEBUG", "SERVER: Qty terupdate ke $newQty")
+                    Log.d("CART_DEBUG", "SERVER: Qty terupdate")
                 }
             } catch (e: Exception) {
                 Log.e("CART_DEBUG", "ERROR update qty: ${e.message}")
@@ -109,9 +97,20 @@ class CartViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearSelectedItems(items: List<CartModel>) {
         viewModelScope.launch(Dispatchers.IO) {
-            val ids = items.map { it.menu_id }
-            cartDao.deleteCheckoutedItems(ids)
-            Log.d("CART_DEBUG", "LOKAL: Checkouted items cleared")
+            try {
+                // Mengambil semua menu_id dari list item yang dicheckout
+                val ids = items.map { it.menu_id }
+
+                // 1. Hapus dari database lokal (Room)
+                cartDao.deleteCheckoutedItems(ids)
+
+                // 2. Opsi: Jika API kamu butuh sinkronisasi penghapusan setelah checkout,
+                // kamu bisa menambahkan loop panggil apiService.removeFromCart(id) di sini.
+
+                Log.d("CART_DEBUG", "LOKAL: Item yang dicheckout berhasil dihapus dari keranjang")
+            } catch (e: Exception) {
+                Log.e("CART_DEBUG", "Error clearing selected items: ${e.message}")
+            }
         }
     }
 }

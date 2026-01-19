@@ -1,6 +1,5 @@
 package com.example.coffeshop.Repository
 
-import com.example.coffeshop.Helper.AuthInterceptor
 import com.example.coffeshop.Helper.TokenManager
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -10,7 +9,6 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    // Sesuaikan IP ini dengan IP laptop kamu (Cek via ipconfig di CMD)
     private const val BASE_URL = "http://192.168.2.101:8000/api/"
 
     private val client: OkHttpClient by lazy {
@@ -20,14 +18,28 @@ object RetrofitClient {
 
         OkHttpClient.Builder()
             .addInterceptor(logging)
-            .addInterceptor(AuthInterceptor(TokenManager.instance))
+            // Jangan panggil AuthInterceptor dengan TokenManager.instance secara langsung di sini
+            .addInterceptor { chain ->
+                val requestBuilder = chain.request().newBuilder()
+
+                // Ambil token secara aman di dalam interceptor
+                try {
+                    val token = TokenManager.instance.getToken()
+                    if (!token.isNullOrEmpty()) {
+                        requestBuilder.addHeader("Authorization", "Bearer $token")
+                    }
+                } catch (e: Exception) {
+                    // Jika TokenManager belum di-init, jangan crash, biarkan tanpa header
+                }
+
+                chain.proceed(requestBuilder.build())
+            }
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
 
-    // Ubah nama dari 'apiService' menjadi 'instance' agar cocok dengan RegisterActivity
     val instance: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
