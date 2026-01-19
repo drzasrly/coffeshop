@@ -10,7 +10,7 @@
         android:id="@+id/titlePage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="45dp"
+        android:layout_marginTop="50dp"
         android:text="Account Settings"
         android:textColor="@color/darkBrown"
         android:textSize="20sp"
@@ -127,14 +127,14 @@
 
         <ImageView
             android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_height="20dp"
             android:scaleType="fitCenter"
             app:srcCompat="@drawable/back" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="5dp"
             android:text="Back"
             android:textColor="@color/darkBrown"
             android:textSize="16sp"

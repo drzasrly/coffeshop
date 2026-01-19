@@ -8,6 +8,16 @@ import retrofit2.Call
 
 interface ApiService {
 
+    // Di dalam interface ApiService
+    @GET("banners")
+    fun getBanners(): Call<MutableList<BannerModel>>
+
+    @GET("categories")
+    fun getCategories(): Call<MutableList<CategoryModel>>
+
+    @GET("items/popular")
+    fun getPopularItems(): Call<MutableList<ItemsModel>>
+
     // --- AUTHENTICATION ---
     @POST("auth/login")
     suspend fun loginUser(@Body request: LoginRequest): LoginResponse

@@ -31,17 +31,18 @@
 
             <ImageView
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="20dp"
                 app:srcCompat="@drawable/back"
                 android:contentDescription="@string/tombol_kembali_desc" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="back"
+                android:layout_marginStart="5dp"
+                android:text="Back"
                 android:textColor="@color/darkBrown"
-                android:textSize="16sp" />
+                android:textSize="16sp"
+                android:textStyle="bold" />
         </LinearLayout>
 
         <TextView
